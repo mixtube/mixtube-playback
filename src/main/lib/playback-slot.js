@@ -1,7 +1,7 @@
 (function(playback) {
 
   /**
-   * @param {{key: Key}} config
+   * @param {{entry: Entry}} config
    */
   function playbackSlot(config) {
 
@@ -12,26 +12,31 @@
       throw new Error;
     }
 
-    function play() {
+    /**
+     * <code>endingSoon</code> is called a little before auto ending is triggered or just when manual ending is called
+     *
+     * @param {{cues: {endingSoon: function}}} config
+     */
+    function start(config) {
       throw new Error;
     }
 
-    function pause() {
-      throw  new Error;
-    }
-
-    function stop() {
+    /**
+     * Initiate slot termination and unregister the cues callbacks.
+     *
+     * @return {Promise}
+     */
+    function end() {
       throw new Error;
     }
 
     var PlaybackSlot = {
-      get loading() {
+      get entry() {
         throw new Error;
       },
       load: load,
-      play: play,
-      pause: pause,
-      stop: stop
+      start: start,
+      end: end
     };
 
     return Object.freeze(PlaybackSlot);
