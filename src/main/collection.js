@@ -1,9 +1,11 @@
 (function(playback) {
+  'use strict';
 
   /**
    * @param {{additionListener: function(PlaybackSlot}} config
+   * @returns Collection
    */
-  function endedPool(config) {
+  function collection(config) {
 
     function add(slot) {
       throw new Error;
@@ -13,14 +15,17 @@
       throw new Error;
     }
 
-    var EndedPool = {
+    /**
+     * @typedef Collection
+     */
+    var Collection = {
       add: add,
       remove: remove
     };
 
-    return Object.freeze(EndedPool);
+    return Object.freeze(Collection);
   }
 
-  playback.endedPool = endedPool;
+  playback.collection = collection;
 
-})({});
+})(window.playback);

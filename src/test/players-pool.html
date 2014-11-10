@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+  <meta charset="UTF-8">
+  <title></title>
+</head>
+<body>
+<script src="https://www.youtube.com/iframe_api" async></script>
+
+<script>
+  window.playback = {};
+</script>
+<script src="../../bower_components/lodash/dist/lodash.js"></script>
+<script src="../../bower_components/js-signals/dist/signals.js"></script>
+<script src="../main/player-youtube.js"></script>
+<script src="../main/players-pool.js"></script>
+
+<button id="go-btn">Start</button>
+
+<script>
+  (function(playback) {
+    'use strict';
+
+    var pool = playback.playersPool({
+      produceElement: function() {
+        var placeHolder = document.createElement('div');
+        document.body.appendChild(placeHolder);
+        return placeHolder;
+      }
+    });
+
+    document.getElementById('go-btn').addEventListener('click', function() {
+      setInterval(function() {
+        var player = pool.getPlayer('youtube');
+        player
+            .loadById('iQWtZd8jM3g')
+            .then(function() {
+
+              _.delay(function() {
+                player.play();
+                player.fadeIn();
+
+                _.delay(function() {
+                  player.fadeOut().then(function() {
+                    player.stop();
+                    pool.releasePlayer(player);
+                  });
+                }, 2000);
+              }, 5000);
+            })
+            .catch(function(e) {
+              console.error(e);
+            });
+      }, 3000)
+    });
+  })(window.playback);
+</script>
+
+</body>
+</html>

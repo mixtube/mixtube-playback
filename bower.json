@@ -1,0 +1,13 @@
+{
+  "name": "mixtube-playback",
+  "version": "1.0.0-alpha.1",
+  "authors": [
+    "Jonathan Raoult <jesuisjonathan@gmx.fr>"
+  ],
+  "license": "MIT",
+  "private": true,
+  "dependencies": {
+    "lodash": "~2.4.1",
+    "js-signals": "~1.0.0"
+  }
+}
