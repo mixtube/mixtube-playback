@@ -15,7 +15,7 @@
   });
 
   /**
-   * @param {{produceElement: function(): Element}} config
+   * @param {{fadeDuration: number, produceElement: function(): Element}} config
    * @returns {PlayerYoutube}
    */
   function playerYoutube(config) {
@@ -35,6 +35,9 @@
         if (!element) {
           throw new Error('The given "produceElement" element function did return any empty value');
         }
+
+        // prepares for the next fade in animation and avoids FOUC
+        element.style.opacity = 0;
 
         var player = new YT.Player(
           element,
@@ -90,7 +93,29 @@
     }
 
     function fadeIn() {
-
+      var fadeInGroup = playback.animationGroup({
+        animations: [
+          playback.animationFade({
+            schedule: 'ui',
+            duration: config.fadeDuration,
+            from: 0,
+            to: 1,
+            step: function(value) {
+              iFrame.style.opacity = value;
+            }
+          }),
+          playback.animationFade({
+            schedule: 'sound',
+            duration: config.fadeDuration,
+            from: 0,
+            to: 100,
+            step: function(value) {
+              _ytPlayer.setVolume(value);
+            }
+          })
+        ]
+      });
+      return fadeInGroup.start();
     }
 
     function fadeOut() {

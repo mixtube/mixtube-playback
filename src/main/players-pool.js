@@ -16,6 +16,9 @@
     },
     play: function() {
     },
+    /**
+     * @returns {Promise}
+     */
     fadeIn: function() {
     },
     /**
@@ -32,6 +35,7 @@
   };
 
   /**
+   * @param {{fadeDuration: number, produceElement: function(): Element}} config
    * @returns {PlayersPool}
    */
   function playersPool(config) {
@@ -45,7 +49,7 @@
      * @returns {Player}
      */
     function newPlayer(provider) {
-      return _playersFactories[provider]({produceElement: config.produceElement});
+      return _playersFactories[provider]({fadeDuration: config.fadeDuration, produceElement: config.produceElement});
     }
 
     /**

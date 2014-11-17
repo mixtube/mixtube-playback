@@ -3,10 +3,11 @@
 
   /**
    * @name Promise
-   * @typedef {Object} Promise
-   * @property {function(function)} then
-   * @property {function(function)} catch
-   * @property {function(=*)} resolve
+   * @typedef Promise
+   * @property {function(function): Promise} then
+   * @property {function(function): Promise} catch
+   * @property {function(=*): Promise} resolve
+   * @property {function(Array): Promise} all
    */
 
   /**
