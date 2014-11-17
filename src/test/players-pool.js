@@ -34,6 +34,7 @@ document.getElementById('test-pool-btn').addEventListener('click', function() {
           });
       })
       .catch(function(e) {
+        pool.releasePlayer(player);
         console.error(e);
       });
   }, 3000)
@@ -57,6 +58,7 @@ document.getElementById('test-transition-btn').addEventListener('click', functio
 
     })
     .catch(function(e) {
+      pool.releasePlayer(player);
       console.error(e);
     });
 })

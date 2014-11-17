@@ -1,15 +1,15 @@
 'use strict';
 
-var gulp = require('gulp');
-var gutil = require('gulp-util');
-var source = require('vinyl-source-stream');
-var watchify = require('watchify');
-var browserify = require('browserify');
+var gulp = require('gulp'),
+  gutil = require('gulp-util'),
+  source = require('vinyl-source-stream'),
+  watchify = require('watchify'),
+  browserify = require('browserify');
 
 gulp.task('watch', function() {
   var srcBundle = './src/test/players-pool.js';
 
-  var bundler = watchify(browserify(srcBundle, watchify.args));
+  var bundler = watchify(browserify(srcBundle, {cache: {}, packageCache: {}, fullPaths: true, debug: true}));
 
   bundler.on('update', rebundle);
 
