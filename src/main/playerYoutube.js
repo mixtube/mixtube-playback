@@ -17,7 +17,7 @@ var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve) {
 });
 
 /**
- * @param {{fadeDuration: number, volumeGain: number, produceElement: function(): Element}} config
+ * @param {{produceElement: function(): Element}} config
  * @returns {PlayerYoutube}
  */
 function playerYoutube(config) {
@@ -66,9 +66,10 @@ function playerYoutube(config) {
    * and volume.
    *
    * @param {boolean} fadeIn true to fade the player in, false to fade out
+   * @param {number} duration
    * @returns {Promise}
    */
-  function fade(fadeIn) {
+  function fade(fadeIn, duration) {
 
     var iFrame = _ytPlayer.getIframe(),
       volumeMax = _audioGain * 100,
@@ -87,7 +88,7 @@ function playerYoutube(config) {
       animations: {
         opacity: animationFade({
           schedule: 'ui',
-          duration: _config.fadeDuration,
+          duration: duration,
           from: opacityFrom,
           to: fadeIn ? 1 : 0,
           step: function(value) {
@@ -96,7 +97,7 @@ function playerYoutube(config) {
         }),
         volume: animationFade({
           schedule: 'sound',
-          duration: _config.fadeDuration,
+          duration: duration,
           from: volumeFrom,
           to: fadeIn ? volumeMax : 0,
           step: function(value) {
@@ -156,12 +157,20 @@ function playerYoutube(config) {
     _ytPlayer.stopVideo();
   }
 
-  function fadeIn() {
-    return fade(true);
+  /**
+   * @param {{duration: number}} config
+   * @returns {Promise}
+   */
+  function fadeIn(config) {
+    return fade(true, config.duration);
   }
 
-  function fadeOut() {
-    return fade(false);
+  /**
+   * @param {{duration: number}} config
+   * @returns {Promise}
+   */
+  function fadeOut(config) {
+    return fade(false, config.duration);
   }
 
   /**

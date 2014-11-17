@@ -19,14 +19,16 @@ var Player = {
   play: function(config) {
   },
   /**
+   * @param {{duration: number}} config
    * @returns {Promise}
    */
-  fadeIn: function() {
+  fadeIn: function(config) {
   },
   /**
+   * @param {{duration: number}} config
    * @returns {Promise}
    */
-  fadeOut: function() {
+  fadeOut: function(config) {
   },
   stop: function() {
   }
@@ -41,7 +43,7 @@ var _playersFactories = {
 };
 
 /**
- * @param {{fadeDuration: number, produceElement: function(): Element}} config
+ * @param {{produceElement: function(): Element}} config
  * @returns {PlayersPool}
  */
 function playersPool(config) {
