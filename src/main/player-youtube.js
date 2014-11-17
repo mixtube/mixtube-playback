@@ -15,13 +15,16 @@
   });
 
   /**
-   * @param {{fadeDuration: number, produceElement: function(): Element}} config
+   * @param {{fadeDuration: number, volumeGain: number, produceElement: function(): Element}} config
    * @returns {PlayerYoutube}
    */
   function playerYoutube(config) {
 
-    var _ytPlayerPromise = null;
-    var _ytPlayer = null;
+    var _config = config,
+      _ytPlayerPromise = null,
+      _ytPlayer = null,
+      _fadeAnimationGroup = null,
+      _audioGain = null;
 
     // we have to use an external event mechanism since the YT API doesn't provide a working removeEventListener
     // see https://code.google.com/p/gdata-issues/issues/detail?id=6700
@@ -31,7 +34,7 @@
 
     function newYtPlayer() {
       return new Promise(function(resolve) {
-        var element = config.produceElement();
+        var element = _config.produceElement();
         if (!element) {
           throw new Error('The given "produceElement" element function did return any empty value');
         }
@@ -54,6 +57,62 @@
             }
           });
       });
+    }
+
+    /**
+     * Starts a fade (in / out) animation on the player by altering the opacity and the audio volume.
+     *
+     * If a fade animation was in progress it stops it first and starts fading from the last "values" for opacity
+     * and volume.
+     *
+     * @param {boolean} fadeIn true to fade the player in, false to fade out
+     * @returns {Promise}
+     */
+    function fade(fadeIn) {
+
+      var iFrame = _ytPlayer.getIframe(),
+        volumeMax = _audioGain * 100,
+        opacityFrom = fadeIn ? 0 : 1,
+        volumeFrom = fadeIn ? 0 : volumeMax;
+
+      if (_fadeAnimationGroup) {
+        // a fade animation was in progress so we stop it to start a new one
+        _fadeAnimationGroup.stop();
+        opacityFrom = iFrame.style.opacity;
+        volumeFrom = _ytPlayer.getVolume();
+      }
+
+      _fadeAnimationGroup = playback.animationGroup({
+        animations: {
+          opacity: playback.animationFade({
+            schedule: 'ui',
+            duration: _config.fadeDuration,
+            from: opacityFrom,
+            to: fadeIn ? 1 : 0,
+            step: function(value) {
+              iFrame.style.opacity = value;
+            }
+          }),
+          volume: playback.animationFade({
+            schedule: 'sound',
+            duration: _config.fadeDuration,
+            from: volumeFrom,
+            to: fadeIn ? volumeMax : 0,
+            step: function(value) {
+              _ytPlayer.setVolume(value);
+            }
+          })
+        }
+      });
+
+      return _fadeAnimationGroup
+        // we rely only on volume animation for its scheduling stability
+        // whereas the opacity uses rAF which is throttled
+        .start().volume
+        .then(function() {
+          // clear animation reference when done
+          _fadeAnimationGroup = null;
+        });
     }
 
     function load(ytPlayer, id) {
@@ -84,7 +143,11 @@
         });
     }
 
-    function play() {
+    /**
+     * @param {{audioGain: number}} config
+     */
+    function play(config) {
+      _audioGain = _.isNumber(config.audioGain) ? config.audioGain : 1;
       _ytPlayer.playVideo();
     }
 
@@ -93,33 +156,11 @@
     }
 
     function fadeIn() {
-      var fadeInGroup = playback.animationGroup({
-        animations: [
-          playback.animationFade({
-            schedule: 'ui',
-            duration: config.fadeDuration,
-            from: 0,
-            to: 1,
-            step: function(value) {
-              iFrame.style.opacity = value;
-            }
-          }),
-          playback.animationFade({
-            schedule: 'sound',
-            duration: config.fadeDuration,
-            from: 0,
-            to: 100,
-            step: function(value) {
-              _ytPlayer.setVolume(value);
-            }
-          })
-        ]
-      });
-      return fadeInGroup.start();
+      return fade(true);
     }
 
     function fadeOut() {
-      return Promise.resolve();
+      return fade(false);
     }
 
     /**

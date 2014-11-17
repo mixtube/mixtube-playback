@@ -14,7 +14,10 @@
      */
     loadById: function(id) {
     },
-    play: function() {
+    /**
+     * @param {{audioGain: number}} config
+     */
+    play: function(config) {
     },
     /**
      * @returns {Promise}
@@ -40,6 +43,8 @@
    */
   function playersPool(config) {
 
+    var _config = config;
+
     var _playersCacheByProvider = {
       youtube: []
     };
@@ -49,7 +54,10 @@
      * @returns {Player}
      */
     function newPlayer(provider) {
-      return _playersFactories[provider]({fadeDuration: config.fadeDuration, produceElement: config.produceElement});
+      return _playersFactories[provider]({
+        fadeDuration: _config.fadeDuration,
+        produceElement: _config.produceElement
+      });
     }
 
     /**

@@ -2,25 +2,24 @@
   "use strict";
 
   /**
-   * @param {{animations: Array.<AnimationFade>}} config
+   * @param {{animations: Object.<string, AnimationFade>}} config
    * @returns {AnimationGroup}
    */
   function animationGroup(config) {
 
+    var _config = config;
+
     /**
-     * @returns {Promise}
+     * @returns {Object.<string, Promise>}
      */
     function start() {
-      var promises = [];
-      config.animations.forEach(function(animation) {
-        promises.push(animation.start());
+      return _.mapValues(_config.animations, function(animation) {
+        return animation.start();
       });
-
-      return Promise.all(promises);
     }
 
     function stop() {
-      config.animations.forEach(function(animation) {
+      _.forOwn(_config.animations, function(animation) {
         animation.stop();
       });
     }
