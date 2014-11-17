@@ -6,13 +6,11 @@ var animationGroup = require('./animationGroup'),
   EventEmitter = require('events').EventEmitter;
 
 var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve) {
-  if (!('YT' in window)) {
+  if (!('YT' in global)) {
     if ('onYouTubeIframeAPIReady' in window) {
       throw new Error('There is already a registered "onYouTubeIframeAPIReady" function');
     }
-    window.onYouTubeIframeAPIReady = function() {
-      resolve();
-    };
+    global.onYouTubeIframeAPIReady = resolve;
   } else {
     resolve();
   }

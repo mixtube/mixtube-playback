@@ -20,7 +20,7 @@ document.getElementById('go-btn').addEventListener('click', function() {
       .then(function() {
 
         delay(function() {
-          player.play({audioGain: .2});
+          player.play({audioGain:.2});
           player
             .fadeIn()
             .then(function() {
