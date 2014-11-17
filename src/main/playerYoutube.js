@@ -78,7 +78,8 @@ function playerYoutube(config) {
     if (_fadeAnimationGroup) {
       // a fade animation was in progress so we stop it to start a new one
       _fadeAnimationGroup.stop();
-      opacityFrom = iFrame.style.opacity;
+      // parse to float to avoid problems in Shifty
+      opacityFrom = parseFloat(iFrame.style.opacity);
       volumeFrom = _ytPlayer.getVolume();
     }
 
