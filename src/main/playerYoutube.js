@@ -53,6 +53,9 @@ function playerYoutube(config) {
             },
             onStateChange: function(evt) {
               _emitter.emit('stateChange', evt);
+            },
+            onError: function(evt) {
+              _emitter.emit('error', evt);
             }
           }
         });
@@ -117,18 +120,37 @@ function playerYoutube(config) {
       });
   }
 
-  function load(ytPlayer, id) {
-    return new Promise(function(resolve) {
-      // we wait for the player the start playing once to consider it loaded
-      _emitter.on('stateChange', function stateChangeListener(evt) {
+  function newLoadPromiseExecutor(ytPlayer, id) {
+    return function loadPromiseExecutor(resolve, reject) {
+
+      function unbindLoadListeners() {
+        _emitter.removeListener('stateChange', loadStateChangeListener);
+        _emitter.removeListener('error', loadErrorListener);
+      }
+
+      function loadStateChangeListener(evt) {
         if (evt.data === YT.PlayerState.PLAYING) {
-          _emitter.removeListener('stateChange', stateChangeListener);
+          unbindLoadListeners();
           ytPlayer.pauseVideo();
           resolve();
         }
-      });
+      }
+
+      function loadErrorListener(evt) {
+        unbindLoadListeners();
+        reject(new Error('An error with code ' + evt.data + ' occurred while loading the YouTube video ' + id));
+      }
+
+      // we wait for the player the start playing once to consider it loaded
+      _emitter.on('stateChange', loadStateChangeListener);
+      _emitter.on('error', loadErrorListener);
+
       ytPlayer.loadVideoById(id);
-    });
+    }
+  }
+
+  function load(ytPlayer, id) {
+    return new Promise(newLoadPromiseExecutor(ytPlayer, id));
   }
 
   function loadById(id) {

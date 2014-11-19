@@ -14,7 +14,7 @@ function playbackSlot(config) {
     _playersPool = _config.playersPool,
 
     _loaded = false,
-    _started = true,
+    _started = false,
     _ended = false,
     _error = false,
 
@@ -38,6 +38,10 @@ function playbackSlot(config) {
   }
 
   /**
+   * Tries to load the video associated to the slot's entry.
+   *
+   * If it succeed the slot can be started. If it fails, the slot is automatically "ended" and can not be started.
+   *
    * @return {Promise}
    */
   function load() {
@@ -51,8 +55,11 @@ function playbackSlot(config) {
           .then(function() {
             _loaded = true;
           })
-          .catch(function() {
+          .catch(function(e) {
             _error = true;
+            end();
+            // propagate the rejection
+            return Promise.reject(e);
           });
     }
 
@@ -75,21 +82,23 @@ function playbackSlot(config) {
   }
 
   /**
-   * Initiate slot termination and unregister the cues callbacks.
+   * Initiate slot termination, unregister the cues callbacks and frees the underlying resources (player etc.).
    *
    * @return {Promise}
    */
   function end() {
+    checkStage((_loaded || _started) && !_error, 'end', 'loading or playing');
+
     if (!_endPromise) {
-      if (_started) {
+      if (!_started) {
+        _endPromise = Promise.resolve();
+      } else {
         _endPromise =
           _player
             .fadeOut({duration: _config.transitionDuration})
             .then(function() {
               _player.stop();
             });
-      } else if (_loaded || _error) {
-        _endPromise = Promise.resolve();
       }
 
       _endPromise
