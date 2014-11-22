@@ -13,6 +13,14 @@ function playbackSlot(config) {
   var _config = config,
     _playersPool = _config.playersPool,
 
+    _endingSoonCb = function() {
+      _endingSoonCb.called = true;
+      sandBoxedExecute(_config.cues.endingSoon);
+    },
+    _endingCb = function() {
+      sandBoxedExecute(_config.cues.ending);
+    },
+
     _loaded = false,
     _started = false,
     _ended = false,
@@ -30,6 +38,20 @@ function playbackSlot(config) {
     if (!predicate) {
       throw new Error('The slot "' + method + '" method should be called only when the ' + requiredStage
       + ' stage is completed');
+    }
+  }
+
+  /**
+   * Essentially a try / catch around the given function.
+   *
+   * @param {function} fn
+   */
+  function sandBoxedExecute(fn) {
+    try {
+      fn();
+    } catch (e) {
+      console.error('An error occurred while executing the sand-boxed function %s', fn);
+      console.error(e);
     }
   }
 
@@ -103,6 +125,10 @@ function playbackSlot(config) {
 
       _endPromise
         .then(function() {
+          if (!_endingSoonCb.called) {
+            _endingSoonCb();
+          }
+          _endingCb();
           dispose();
           _ended = true;
         });
