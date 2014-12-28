@@ -4,12 +4,19 @@ var gulp = require('gulp'),
   gutil = require('gulp-util'),
   source = require('vinyl-source-stream'),
   watchify = require('watchify'),
-  browserify = require('browserify');
+  browserify = require('browserify'),
+  browserSync = require('browser-sync');
 
 gulp.task('watch', function() {
   var srcBundle = './src/test/players-pool.js';
 
-  var bundler = watchify(browserify(srcBundle, {cache: {}, packageCache: {}, fullPaths: true, debug: true}));
+  var bundler = watchify(browserify(srcBundle,
+    {
+      cache: {},
+      packageCache: {},
+      fullPaths: true,
+      debug: true
+    }));
 
   bundler.on('update', rebundle);
 
@@ -22,3 +29,14 @@ gulp.task('watch', function() {
 
   return rebundle();
 });
+
+gulp.task('serve', function() {
+  browserSync({
+    server: {
+      baseDir: 'src/test'
+    },
+    open: false
+  });
+});
+
+gulp.task('default', ['watch', 'serve']);
