@@ -8,23 +8,24 @@ var gulp = require('gulp'),
   browserSync = require('browser-sync');
 
 gulp.task('watch', function() {
-  var srcBundle = './src/test/players-pool.js';
+  var srcBundle = './src/test-legacy/playersPoolTests.js';
 
-  var bundler = watchify(browserify(srcBundle,
-    {
-      cache: {},
-      packageCache: {},
-      fullPaths: true,
-      debug: true
-    }));
+  var bundler = watchify(
+    browserify(srcBundle,
+      {
+        cache: {},
+        packageCache: {},
+        fullPaths: true,
+        debug: true
+      }));
 
   bundler.on('update', rebundle);
 
   function rebundle() {
     return bundler.bundle()
       .on('error', gutil.log.bind(gutil, 'Browserify Error'))
-      .pipe(source('players-pool.dist.js'))
-      .pipe(gulp.dest('./src/test/'));
+      .pipe(source('playersPoolTests.bundle.js'))
+      .pipe(gulp.dest('dist/test-legacy'));
   }
 
   return rebundle();
@@ -33,7 +34,7 @@ gulp.task('watch', function() {
 gulp.task('serve', function() {
   browserSync({
     server: {
-      baseDir: 'src/test'
+      baseDir: ['src/test-legacy', 'dist/test-legacy']
     },
     open: false
   });
