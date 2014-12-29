@@ -34,16 +34,11 @@ var Player = {
   }
 };
 
-var playerYoutube = require('./playerYoutube'),
-  find = require('lodash-node/modern/collections/find'),
+var find = require('lodash-node/modern/collections/find'),
   has = require('lodash-node/modern/objects/has');
 
-var _playersFactories = {
-  youtube: playerYoutube
-};
-
 /**
- * @param {{produceElement: function(): Element}} config
+ * @param {{playerFactory: PlayerFactory}} config
  * @returns {PlayersPool}
  */
 function playersPool(config) {
@@ -54,15 +49,8 @@ function playersPool(config) {
     youtube: []
   };
 
-  /**
-   * @param {string} provider
-   * @returns {Player}
-   */
   function newPlayer(provider) {
-    return _playersFactories[provider]({
-      fadeDuration: _config.fadeDuration,
-      produceElement: _config.produceElement
-    });
+    return _config.playerFactory.newPlayer(provider);
   }
 
   /**

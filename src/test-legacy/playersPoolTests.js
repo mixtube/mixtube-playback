@@ -1,18 +1,22 @@
 'use strict';
 
 var playersPool = require('../main/playersPool'),
+  playerFactory = require('../main/playerFactory'),
   playbackSlot = require('../main/playbackSlot'),
   delay = require('lodash-node/modern/functions/delay');
 
 var fadeDuration = 2000;
 
-var pool = playersPool({
-  fadeDuration: fadeDuration,
-  produceElement: function() {
+var factory = playerFactory({
+  elementProducer: function() {
     var placeHolder = document.createElement('div');
     document.body.appendChild(placeHolder);
     return placeHolder;
   }
+});
+
+var pool = playersPool({
+  playerFactory: factory
 });
 
 function trigger(btnId, handler) {

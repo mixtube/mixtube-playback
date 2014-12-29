@@ -17,7 +17,7 @@ var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve) {
 });
 
 /**
- * @param {{produceElement: function(): Element}} config
+ * @param {{elementProducer: function(): Element}} config
  * @returns {PlayerYoutube}
  */
 function playerYoutube(config) {
@@ -34,9 +34,9 @@ function playerYoutube(config) {
 
   function newYtPlayer() {
     return new Promise(function(resolve) {
-      var element = _config.produceElement();
+      var element = _config.elementProducer();
       if (!element) {
-        throw new Error('The given "produceElement" element function did return any empty value');
+        throw new Error('The given "elementProducer" function did return any empty value');
       }
 
       // prepares for the next fade in animation and avoids FOUC
