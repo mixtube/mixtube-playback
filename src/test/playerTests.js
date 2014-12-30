@@ -9,12 +9,36 @@ var playersPool = require('../main/playersPool'),
 function PlayerFactoryMockBuilder() {
 
   var loadByIdImpl =
-    jasmine.createSpy('loadById')
-      .and.returnValue(new Promise(noop));
+      jasmine.createSpy('loadById')
+        .and.returnValue(new Promise(noop)),
+    playImpl = jasmine.createSpy('playSpy'),
+    fadeInImpl = jasmine.createSpy('fadeInSpy'),
+    fadeOutImpl = jasmine.createSpy('fadeOutSpy'),
+    stopImpl = jasmine.createSpy('stopSpy');
 
   var builder = {
     withLoadById: function(impl) {
       loadByIdImpl = impl;
+      return builder;
+    },
+
+    withPlay: function(impl) {
+      playImpl = impl;
+      return builder;
+    },
+
+    withFadeIn: function(impl) {
+      fadeInImpl = impl;
+      return builder;
+    },
+
+    withFadeOut: function(impl) {
+      fadeOutImpl = impl;
+      return builder;
+    },
+
+    withStop: function(impl) {
+      stopImpl = impl;
       return builder;
     },
 
@@ -29,10 +53,10 @@ function PlayerFactoryMockBuilder() {
               return provider;
             },
             loadById: loadByIdImpl,
-            play: jasmine.createSpy('play'),
-            stop: jasmine.createSpy('stop'),
-            fadeIn: jasmine.createSpy('fadeIn'),
-            fadeOut: jasmine.createSpy('fadeOut')
+            play: playImpl,
+            stop: stopImpl,
+            fadeIn: fadeInImpl,
+            fadeOut: fadeOutImpl
           };
         }
       };
@@ -135,23 +159,90 @@ describe('A player slot', function() {
     expect(videoFetcherSpy).toHaveBeenCalledWith(entryMock);
   });
 
-  it('returns and resolves the promise when a call to load is successful', function(done) {
+  describe('when a call to load is successful', function() {
+
+    var _factory,
+      _pool;
+
+    beforeEach(function() {
+      _factory = PlayerFactoryMockBuilder()
+        .withLoadById(function() {
+          return Promise.resolve();
+        })
+        .build();
+
+      _pool = playersPool({playerFactory: _factory});
+    });
+
+    it('returns and resolves the promise', function(done) {
+      var slot = playerSlotMock({playersPool: _pool});
+      var loadSuccessSpy = jasmine.createSpy('loadSuccessSpy');
+
+      always(slot.load().then(loadSuccessSpy), function() {
+        expect(loadSuccessSpy).toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it('starts the slot properly', function(done) {
+      var playSpy = jasmine.createSpy('playSpy');
+      var fadeInSpy = jasmine.createSpy('fadeInSpy');
+
+      var factory = PlayerFactoryMockBuilder()
+        .withLoadById(function() {
+          return Promise.resolve();
+        })
+        .withPlay(playSpy)
+        .withFadeIn(fadeInSpy)
+        .build();
+
+      var transitionDuration = 10;
+      var slot = playerSlotMock({
+        playersPool: playersPool({playerFactory: factory}),
+        transitionDuration: transitionDuration
+      });
+
+      slot.load().then(function() {
+        var config = {audioGain: 0};
+        slot.start(config);
+
+        expect(playSpy).toHaveBeenCalledWith(config);
+        expect(fadeInSpy).toHaveBeenCalledWith({duration: transitionDuration});
+
+        done();
+      });
+    });
+  });
+
+  it('ends the slot properly when end is called while playing', function(done) {
+    var stopSpy = jasmine.createSpy('stopSpy');
+    var fadeOutSpy = jasmine.createSpy('fadeOutSpy').and.returnValue(Promise.resolve());
 
     var factory = PlayerFactoryMockBuilder()
       .withLoadById(function() {
         return Promise.resolve();
       })
+      .withFadeOut(fadeOutSpy)
+      .withStop(stopSpy)
       .build();
 
+    var transitionDuration = 10;
     var slot = playerSlotMock({
-      playersPool: playersPool({playerFactory: factory})
+      playersPool: playersPool({playerFactory: factory}),
+      transitionDuration: transitionDuration
     });
 
-    var loadSuccessSpy = jasmine.createSpy('loadSuccessSpy');
+    slot.load().then(function() {
+      slot.start();
+      setTimeout(function() {
+        slot.end().then(function() {
 
-    always(slot.load().then(loadSuccessSpy), function() {
-      expect(loadSuccessSpy).toHaveBeenCalled();
-      done();
+          expect(fadeOutSpy).toHaveBeenCalled();
+          expect(stopSpy).toHaveBeenCalled();
+
+          done();
+        });
+      }, 0);
     });
   });
 
@@ -194,10 +285,8 @@ describe('A player slot', function() {
 
       always(slot.load(), function() {
         expect(releasePlayerSpy).toHaveBeenCalled();
-
-        // should not call ending soon I think
-        expect(endingSoonSpy).toHaveBeenCalled();
-        expect(endingSpy).toHaveBeenCalled();
+        expect(endingSoonSpy).not.toHaveBeenCalled();
+        expect(endingSpy).not.toHaveBeenCalled();
         done();
       });
     });

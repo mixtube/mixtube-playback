@@ -181,10 +181,9 @@ function playerYoutube(config) {
 
   /**
    * @param {{duration: number}} config
-   * @returns {Promise}
    */
   function fadeIn(config) {
-    return fade(true, config.duration);
+    fade(true, config.duration);
   }
 
   /**

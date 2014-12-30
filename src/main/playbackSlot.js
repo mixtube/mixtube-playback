@@ -120,15 +120,16 @@ function playbackSlot(config) {
             .fadeOut({duration: _config.transitionDuration})
             .then(function() {
               _player.stop();
+
+              if (!_endingSoonCb.called) {
+                _endingSoonCb();
+              }
+              _endingCb();
             });
       }
 
       _endPromise
         .then(function() {
-          if (!_endingSoonCb.called) {
-            _endingSoonCb();
-          }
-          _endingCb();
           dispose();
           _ended = true;
         });

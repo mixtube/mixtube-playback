@@ -20,7 +20,6 @@ var Player = {
   },
   /**
    * @param {{duration: number}} config
-   * @returns {Promise}
    */
   fadeIn: function(config) {
   },
