@@ -45,28 +45,33 @@ function playersPool(config) {
 
   var _config = config;
 
-  var _playersCacheByProvider = {
-    youtube: []
-  };
-
-  function newPlayer(provider) {
-    return _config.playerFactory.newPlayer(provider);
-  }
+  var _playersCacheByProvider = {};
 
   /**
    * @param {string} provider
    * @returns {Player}
    */
   function getPlayer(provider) {
+    if (!provider) {
+      throw new Error('A provider type has to be provided');
+    }
+
+    if (!_config.playerFactory.canCreatePlayer(provider)) {
+      throw new Error('Unsupported provider type ' + provider);
+    }
+
     if (!has(_playersCacheByProvider, provider)) {
-      throw new Error('Unsupported player type ' + provider);
+      _playersCacheByProvider[provider] = [];
     }
 
     var playersCache = _playersCacheByProvider[provider];
 
     var playerCacheEntry = find(playersCache, {free: true});
     if (!playerCacheEntry) {
-      playerCacheEntry = {player: newPlayer(provider), free: false};
+      playerCacheEntry = {
+        player: _config.playerFactory.newPlayer(provider),
+        free: false
+      };
       playersCache.push(playerCacheEntry);
     } else {
       playerCacheEntry.free = false;

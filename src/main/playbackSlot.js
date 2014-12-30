@@ -5,7 +5,7 @@
  * <code>endingSoon</code> is called a little before auto ending is triggered or just before manual ending is called
  * <code>ending</code> is called when auto ending is triggered or just before slot ending
  *
- * @param {{entry: Entry, cues: {endingSoon: function, ending: function}, fetchVideo: function(Entry):Video, playersPool: PlayersPool, transitionDuration: number}} config
+ * @param {{entry: Entry, cues: {endingSoon: function, ending: function}, videoFetcher: function(Entry):Video, playersPool: PlayersPool, transitionDuration: number}} config
  * @returns {PlaybackSlot}
  */
 function playbackSlot(config) {
@@ -31,7 +31,7 @@ function playbackSlot(config) {
     _endPromise = null;
 
   function getVideo() {
-    return _config.fetchVideo(_config.entry);
+    return _config.videoFetcher(_config.entry);
   }
 
   function checkStage(predicate, method, requiredStage) {
@@ -109,7 +109,7 @@ function playbackSlot(config) {
    * @return {Promise}
    */
   function end() {
-    checkStage((_loaded || _started) && !_error, 'end', 'loading or playing');
+    //checkStage((_loaded || _started) && !_error, 'end', 'loading or playing');
 
     if (!_endPromise) {
       if (!_started) {

@@ -1,17 +1,16 @@
 'use strict';
 
-var gulp = require('gulp'),
+var path = require('path'),
+  gulp = require('gulp'),
   gutil = require('gulp-util'),
   source = require('vinyl-source-stream'),
   watchify = require('watchify'),
   browserify = require('browserify'),
   browserSync = require('browser-sync');
 
-gulp.task('watch', function() {
-  var srcBundle = './src/test-legacy/playersPoolTests.js';
-
+function installWatchify(src, dest) {
   var bundler = watchify(
-    browserify(srcBundle,
+    browserify(src,
       {
         cache: {},
         packageCache: {},
@@ -24,11 +23,21 @@ gulp.task('watch', function() {
   function rebundle() {
     return bundler.bundle()
       .on('error', gutil.log.bind(gutil, 'Browserify Error'))
-      .pipe(source('playersPoolTests.bundle.js'))
-      .pipe(gulp.dest('dist/test-legacy'));
+      .pipe(source(path.basename(dest)))
+      .pipe(gulp.dest(path.dirname(dest)));
   }
 
   return rebundle();
+}
+
+gulp.task('watch', function() {
+  installWatchify(
+    './src/test-legacy/playersPoolTests.js',
+    './dist/test-legacy/playersPoolTests.bundle.js');
+
+  installWatchify(
+    './src/test/playerTests.js',
+    './dist/test/playerTests.bundle.js');
 });
 
 gulp.task('serve', function() {
