@@ -2,6 +2,8 @@
 
 var playersPool = require('../main/playersPool'),
   playbackSlot = require('../main/playbackSlot'),
+  playerFactoryMock = require('./playerFactoryMock'),
+  playersPoolMock = require('./playersPoolMock'),
   defaults = require('lodash-node/modern/objects/defaults'),
   assign = require('lodash-node/modern/objects/assign'),
   noop = require('lodash-node/modern/utilities/noop');
@@ -10,10 +12,11 @@ function PlayerFactoryMockBuilder() {
 
   var loadByIdImpl =
       jasmine.createSpy('loadById')
-        .and.returnValue(new Promise(noop)),
+        .and.returnValue(Promise.resolve()),
     playImpl = jasmine.createSpy('playSpy'),
     fadeInImpl = jasmine.createSpy('fadeInSpy'),
-    fadeOutImpl = jasmine.createSpy('fadeOutSpy'),
+    fadeOutImpl = jasmine.createSpy('fadeOutSpy')
+      .and.returnValue(Promise.resolve()),
     stopImpl = jasmine.createSpy('stopSpy');
 
   var builder = {
@@ -52,6 +55,12 @@ function PlayerFactoryMockBuilder() {
             get provider() {
               return provider;
             },
+            get duration() {
+              return 0;
+            },
+            get currentTime() {
+              return 0;
+            },
             loadById: loadByIdImpl,
             play: playImpl,
             stop: stopImpl,
@@ -79,7 +88,13 @@ describe('A player pool', function() {
     _pool;
 
   beforeEach(function() {
-    _playerFactoryMock = PlayerFactoryMockBuilder().build();
+    _playerFactoryMock = playerFactoryMock();
+    _playerFactoryMock.canCreatePlayer.and.callFake(function(provider) {
+      return provider === 'mock';
+    });
+    _playerFactoryMock.newPlayer.and.callFake(function(provider) {
+      return {provider: provider};
+    });
     _pool = playersPool({playerFactory: _playerFactoryMock});
   });
 
@@ -93,6 +108,7 @@ describe('A player pool', function() {
 
   it('recycles a player when freed', function() {
     var playerFirst = _pool.getPlayer('mock');
+
     expect(playerFirst).toBeDefined();
     _pool.releasePlayer(playerFirst);
     expect(playerFirst).toEqual(_pool.getPlayer('mock'));
@@ -124,7 +140,6 @@ describe('A player slot', function() {
 
   function playerSlotMock(config) {
     var defaultConfig = {
-      playersPool: playersPool({playerFactory: PlayerFactoryMockBuilder().build()}),
       entry: {mockMedia: {mediaSource: 'mock', mediaKey: 'mockId'}},
       videoFetcher: function(entry) {
         return {
@@ -136,7 +151,10 @@ describe('A player slot', function() {
         endingSoon: jasmine.createSpy('endingSoon'),
         ending: jasmine.createSpy('ending')
       },
-      transitionDuration: 0
+      autoEndTimeProducer: function(duration) {
+        return duration - 10;
+      },
+      transitionDuration: 10
     };
 
     return playbackSlot(defaults({}, config, defaultConfig));
@@ -149,7 +167,10 @@ describe('A player slot', function() {
       .createSpy('videoFetcherSpy')
       .and.returnValue({provider: 'mock', id: 'mockId'});
 
+    var pool = playersPoolMock();
+
     var slot = playerSlotMock({
+      playersPool: pool,
       entry: entryMock,
       videoFetcher: videoFetcherSpy
     });
@@ -159,77 +180,64 @@ describe('A player slot', function() {
     expect(videoFetcherSpy).toHaveBeenCalledWith(entryMock);
   });
 
-  describe('when a call to load is successful', function() {
+  it('returns and resolves the promise', function(done) {
+    var pool = playersPoolMock();
+    var loadSuccessSpy = jasmine.createSpy('loadSuccessSpy');
 
-    var _factory,
-      _pool;
+    var slot = playerSlotMock({playersPool: pool});
 
-    beforeEach(function() {
-      _factory = PlayerFactoryMockBuilder()
-        .withLoadById(function() {
-          return Promise.resolve();
-        })
-        .build();
+    always(slot.load().then(loadSuccessSpy), function() {
+      expect(loadSuccessSpy).toHaveBeenCalled();
+      done();
+    });
+  });
 
-      _pool = playersPool({playerFactory: _factory});
+  it('starts the slot properly', function(done) {
+    var playSpy, fadeInSpy;
+    var pool = playersPoolMock(function(props, player) {
+      playSpy = player.play;
+      fadeInSpy = player.fadeIn;
+      return player;
     });
 
-    it('returns and resolves the promise', function(done) {
-      var slot = playerSlotMock({playersPool: _pool});
-      var loadSuccessSpy = jasmine.createSpy('loadSuccessSpy');
-
-      always(slot.load().then(loadSuccessSpy), function() {
-        expect(loadSuccessSpy).toHaveBeenCalled();
-        done();
-      });
+    var transitionDuration = 10;
+    var slot = playerSlotMock({
+      playersPool: pool,
+      transitionDuration: transitionDuration
     });
 
-    it('starts the slot properly', function(done) {
-      var playSpy = jasmine.createSpy('playSpy');
-      var fadeInSpy = jasmine.createSpy('fadeInSpy');
+    slot.load().then(function() {
+      var config = {audioGain: 0};
+      slot.start(config);
 
-      var factory = PlayerFactoryMockBuilder()
-        .withLoadById(function() {
-          return Promise.resolve();
-        })
-        .withPlay(playSpy)
-        .withFadeIn(fadeInSpy)
-        .build();
+      expect(playSpy).toHaveBeenCalledWith(config);
+      expect(fadeInSpy).toHaveBeenCalledWith({duration: transitionDuration});
 
-      var transitionDuration = 10;
-      var slot = playerSlotMock({
-        playersPool: playersPool({playerFactory: factory}),
-        transitionDuration: transitionDuration
-      });
+      slot.end();
 
-      slot.load().then(function() {
-        var config = {audioGain: 0};
-        slot.start(config);
-
-        expect(playSpy).toHaveBeenCalledWith(config);
-        expect(fadeInSpy).toHaveBeenCalledWith({duration: transitionDuration});
-
-        done();
-      });
+      done();
     });
   });
 
   it('ends the slot properly when end is called while playing', function(done) {
-    var stopSpy = jasmine.createSpy('stopSpy');
-    var fadeOutSpy = jasmine.createSpy('fadeOutSpy').and.returnValue(Promise.resolve());
+    var stopSpy, fadeOutSpy,
+      endingSpy = jasmine.createSpy('endingSpy'),
+      endingSoonSpy = jasmine.createSpy('endingSoonSpy'),
+      transitionDuration = 10;
 
-    var factory = PlayerFactoryMockBuilder()
-      .withLoadById(function() {
-        return Promise.resolve();
-      })
-      .withFadeOut(fadeOutSpy)
-      .withStop(stopSpy)
-      .build();
+    var pool = playersPoolMock(function(props, player) {
+      fadeOutSpy = player.fadeOut;
+      stopSpy = player.stop;
+      return player;
+    });
 
-    var transitionDuration = 10;
     var slot = playerSlotMock({
-      playersPool: playersPool({playerFactory: factory}),
-      transitionDuration: transitionDuration
+      playersPool: pool,
+      transitionDuration: transitionDuration,
+      cues: {
+        endingSoon: endingSoonSpy,
+        ending: endingSpy
+      }
     });
 
     slot.load().then(function() {
@@ -239,6 +247,8 @@ describe('A player slot', function() {
 
           expect(fadeOutSpy).toHaveBeenCalled();
           expect(stopSpy).toHaveBeenCalled();
+          expect(endingSpy).toHaveBeenCalled();
+          expect(endingSoonSpy).toHaveBeenCalled();
 
           done();
         });
@@ -248,22 +258,14 @@ describe('A player slot', function() {
 
   describe('when a call to load is unsuccessful', function() {
 
-    var _factory,
-      _pool;
-
-    beforeEach(function() {
-      _factory = PlayerFactoryMockBuilder()
-        .withLoadById(function() {
-          return Promise.reject();
-        })
-        .build();
-
-      _pool = playersPool({playerFactory: _factory});
-    });
-
     it('returns and reject the promise', function(done) {
       var loadFailSpy = jasmine.createSpy('loadFailSpy');
-      var slot = playerSlotMock({playersPool: _pool});
+      var pool = playersPoolMock(function(props, player) {
+        player.loadById.and.returnValue(Promise.reject());
+        return player;
+      });
+
+      var slot = playerSlotMock({playersPool: pool});
 
       always(slot.load().then(null, loadFailSpy), function() {
         expect(loadFailSpy).toHaveBeenCalled();
@@ -272,11 +274,16 @@ describe('A player slot', function() {
     });
 
     it('ends the slot properly', function(done) {
-      var releasePlayerSpy = jasmine.createSpy('releasePlayerSpy');
-      var endingSoonSpy = jasmine.createSpy('endingSoonSpy');
-      var endingSpy = jasmine.createSpy('endingSpy');
+      var endingSoonSpy = jasmine.createSpy('endingSoonSpy'),
+        endingSpy = jasmine.createSpy('endingSpy');
+
+      var pool = playersPoolMock(function(props, player) {
+        player.loadById.and.returnValue(Promise.reject());
+        return player;
+      });
+
       var slot = playerSlotMock({
-        playersPool: assign({}, _pool, {releasePlayer: releasePlayerSpy}),
+        playersPool: pool,
         cues: {
           endingSoon: endingSoonSpy,
           ending: endingSpy
@@ -284,7 +291,7 @@ describe('A player slot', function() {
       });
 
       always(slot.load(), function() {
-        expect(releasePlayerSpy).toHaveBeenCalled();
+        expect(pool.releasePlayer).toHaveBeenCalled();
         expect(endingSoonSpy).not.toHaveBeenCalled();
         expect(endingSpy).not.toHaveBeenCalled();
         done();

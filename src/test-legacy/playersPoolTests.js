@@ -88,6 +88,9 @@ trigger('test-slot-btn', function() {
           console.info('End');
         }
       },
+      autoEndTimeProducer: function(duration) {
+        return duration - 1000;
+      },
       transitionDuration: fadeDuration
     });
 

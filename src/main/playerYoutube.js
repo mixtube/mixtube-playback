@@ -203,6 +203,12 @@ function playerYoutube(config) {
     get provider() {
       return 'youtube';
     },
+    get currentTime() {
+      return _ytPlayer.getCurrentTime();
+    },
+    get duration() {
+      return _ytPlayer.getDuration();
+    },
     loadById: loadById,
     play: play,
     stop: stop,
