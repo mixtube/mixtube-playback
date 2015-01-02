@@ -372,6 +372,9 @@ describe('A player slot', function() {
       jasmine.clock().tick(cuesHandlerInterval);
       expect(endingSpy).toHaveBeenCalled();
 
+      expect(endingSoonSpy.calls.count()).toEqual(1);
+      expect(endingSpy.calls.count()).toEqual(1);
+
       jasmine.clock().uninstall();
 
       done();
