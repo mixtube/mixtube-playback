@@ -1,5 +1,7 @@
 'use strict';
 
+var once = require('lodash-node/modern/functions/once');
+
 /**
  * @typedef {Object} States
  * @property pristine
@@ -29,7 +31,7 @@ var States = {};
  * <code>endingSoon</code> is called a little before auto ending is triggered or just before manual ending is called
  * <code>ending</code> is called when auto ending is triggered or just before slot ending
  *
- * @param {{entry: Entry, cues: {endingSoon: function, ending: function}, autoEndTimeProducer: function(number):number, videoFetcher: function(Entry):Video, playersPool: PlayersPool, transitionDuration: number}} config
+ * @param {{entry: Entry, cues: {endingSoon: {time: function(number):number, callback: function}, ending: {time: function(number):number, callback: function}}, videoFetcher: function(Entry):Video, playersPool: PlayersPool, transitionDuration: number}} config
  * @returns {PlaybackSlot}
  */
 function playbackSlot(config) {
@@ -42,7 +44,15 @@ function playbackSlot(config) {
     _player = null,
     _loadPromise = null,
     _endPromise = null,
-    _stopCuesHandler = null;
+
+    _stopCuesHandler = null,
+
+    callEndingSoonOnce = once(function() {
+      sandBoxedExecute(_config.cues.endingSoon.callback);
+    }),
+    callEndingOnce = once(function() {
+      sandBoxedExecute(_config.cues.ending.callback)
+    });
 
   function getVideo() {
     return _config.videoFetcher(_config.entry);
@@ -53,20 +63,6 @@ function playbackSlot(config) {
       throw new Error('The slot "' + method + '" method should be called only when in ' + requiredState
       + ' state (current is ' + _state + ')');
     }
-  }
-
-  /**
-   * Calls the "ending soon" callback in a sandbox if it has not been done yet.
-   */
-  function callEndingSoonCb() {
-    if (!callEndingSoonCb.called) {
-      callEndingSoonCb.called = true;
-      sandBoxedExecute(_config.cues.endingSoon);
-    }
-  }
-
-  function callEndingCb() {
-    sandBoxedExecute(_config.cues.ending);
   }
 
   /**
@@ -143,13 +139,16 @@ function playbackSlot(config) {
       if (_state === States.playing) {
         _state = States.ending;
         _stopCuesHandler();
+
+        // make sure the cues are called while ending if it has not been done before
+        callEndingSoonOnce();
+        callEndingOnce();
+
         _endPromise =
           _player
             .fadeOut({duration: _config.transitionDuration})
             .then(function() {
               _player.stop();
-              callEndingSoonCb();
-              callEndingCb();
             });
       } else {
         _endPromise = Promise.resolve();
@@ -171,8 +170,9 @@ function playbackSlot(config) {
   function startCuesHandler() {
     var duration = _player.duration * 1000,
       autoEndTime = Math.min(duration - _config.transitionDuration,
-        _config.autoEndTimeProducer(duration)),
-      endingSoonTime = autoEndTime - 10000,
+        _config.cues.ending.time(duration)),
+      endingSoonTime = Math.min(autoEndTime,
+        _config.cues.endingSoon.time(duration)),
       previousTime = 0;
 
     var intervalId = setInterval(function cuesHandlerIntervalExecutor() {
@@ -182,10 +182,11 @@ function playbackSlot(config) {
         // consider only progress in time
 
         if (previousTime < endingSoonTime && endingSoonTime < currentTime) {
-          callEndingSoonCb();
+          callEndingSoonOnce();
         }
 
         if (previousTime < autoEndTime && autoEndTime < currentTime) {
+          callEndingOnce();
           end();
         }
       }

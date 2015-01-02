@@ -5,8 +5,7 @@ var playersPool = require('../main/playersPool'),
   playerFactoryMock = require('./playerFactoryMock'),
   playersPoolMock = require('./playersPoolMock'),
   defaults = require('lodash-node/modern/objects/defaults'),
-  assign = require('lodash-node/modern/objects/assign'),
-  noop = require('lodash-node/modern/utilities/noop');
+  constant = require('lodash-node/modern/utilities/constant');
 
 function PlayerFactoryMockBuilder() {
 
@@ -148,13 +147,18 @@ describe('A player slot', function() {
         };
       },
       cues: {
-        endingSoon: jasmine.createSpy('endingSoon'),
-        ending: jasmine.createSpy('ending')
+        endingSoon: {
+          time: function(duration) {
+            return duration - 2000;
+          }, callback: jasmine.createSpy('endingSoon')
+        },
+        ending: {
+          time: function(duration) {
+            return duration - 1000;
+          }, callback: jasmine.createSpy('ending')
+        }
       },
-      autoEndTimeProducer: function(duration) {
-        return duration - 10;
-      },
-      transitionDuration: 10
+      transitionDuration: 1000
     };
 
     return playbackSlot(defaults({}, config, defaultConfig));
@@ -235,8 +239,8 @@ describe('A player slot', function() {
       playersPool: pool,
       transitionDuration: transitionDuration,
       cues: {
-        endingSoon: endingSoonSpy,
-        ending: endingSpy
+        endingSoon: {callback: endingSoonSpy, time: constant(0)},
+        ending: {callback: endingSpy, time: constant(0)}
       }
     });
 
@@ -285,8 +289,8 @@ describe('A player slot', function() {
       var slot = playerSlotMock({
         playersPool: pool,
         cues: {
-          endingSoon: endingSoonSpy,
-          ending: endingSpy
+          endingSoon: {callback: endingSoonSpy},
+          ending: {callback: endingSpy}
         }
       });
 
@@ -299,15 +303,79 @@ describe('A player slot', function() {
     });
   });
 
-  describe('triggers an error', function() {
-    it('when start is called before load', function() {
+  it('triggers an error when start is called before load', function() {
 
-      var slot = playerSlotMock();
+    var slot = playerSlotMock();
 
-      expect(function() {
-        slot.start();
-      }).toThrow();
-    });
+    expect(function() {
+      slot.start();
+    }).toThrow();
   });
+
+
+  it('runs "ending soon" and "ending" in schedule', function(done) {
+    var fadeOutSpy,
+      endingSpy = jasmine.createSpy('endingSpy'),
+      endingSoonSpy = jasmine.createSpy('endingSoonSpy'),
+      videoDuration = 20000,
+      cuesHandlerInterval = 100,
+      playerProps;
+
+    var pool = playersPoolMock(function(props, player) {
+      playerProps = props;
+      fadeOutSpy = player.fadeOut.and.callFake(function(config) {
+        return new Promise(function(success) {
+          setTimeout(success, config.duration);
+        });
+      });
+      return player;
+    });
+
+    var slot = playerSlotMock({
+      playersPool: pool,
+      transitionDuration: videoDuration / 4,
+      cues: {
+        endingSoon: {
+          time: function(duration) {
+            return duration * 2 / 4;
+          }, callback: endingSoonSpy
+        },
+        ending: {
+          time: function(duration) {
+            return duration * 3 / 4;
+          }, callback: endingSpy
+        }
+      }
+    });
+
+    jasmine.clock().install();
+
+    slot.load().then(function() {
+
+      playerProps.duration = videoDuration / 1000;
+
+      slot.start();
+
+      // we are going to execute 3 "cues handler" cycles each time with a different currentTime value
+
+      playerProps.currentTime = playerProps.duration * 1 / 4;
+      jasmine.clock().tick(cuesHandlerInterval);
+      expect(endingSoonSpy).not.toHaveBeenCalled();
+      expect(endingSpy).not.toHaveBeenCalled();
+
+      playerProps.currentTime = playerProps.duration * 2.1 / 4;
+      jasmine.clock().tick(cuesHandlerInterval);
+      expect(endingSoonSpy).toHaveBeenCalled();
+      expect(endingSpy).not.toHaveBeenCalled();
+
+      playerProps.currentTime = playerProps.duration * 3.1 / 4;
+      jasmine.clock().tick(cuesHandlerInterval);
+      expect(endingSpy).toHaveBeenCalled();
+
+      jasmine.clock().uninstall();
+
+      done();
+    });
+  })
 
 });
