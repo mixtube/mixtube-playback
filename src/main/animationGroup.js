@@ -28,7 +28,6 @@ function animationGroup(config) {
 
   /**
    * @typedef AnimationGroup
-   * @name AnimationGroup
    */
   var AnimationGroup = {
     start: start,

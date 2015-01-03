@@ -4,6 +4,17 @@ var playerYoutube = require('./playerYoutube'),
   has = require('lodash-node/modern/objects/has');
 
 /**
+ * @typedef {Object} Player
+ * @interface
+ * @property {function(string)} loadById
+ * @property {function({audioGain: number})} play
+ * @property {function({duration: number})} fadeIn
+ * @property {function({duration: number}):Promise} fadeOut
+ * @property {function} stop
+ */
+
+
+/**
  * @param {{elementProducer: function(): Element}} config
  * @returns {PlayerFactory}
  */
@@ -35,7 +46,6 @@ function playerFactory(config) {
 
   /**
    * @typedef PlayerFactory
-   * @name PlayerFactory
    */
   var PlayerFactory = {
     canCreatePlayer: canCreatePlayer,

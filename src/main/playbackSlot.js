@@ -27,15 +27,25 @@ var States = {};
   });
 
 /**
+ * @typedef {Object} Config
+ * @property {Entry} entry
+ * @property {{endingSoon: {time: function(number):number, callback: function}}} cues
+ * @property {function(Entry):Video} videoFetcher
+ * @property {PlayersPool} playersPool
+ * @property {number} transitionDuration
+ */
+
+/**
  * Cues:
  * <code>endingSoon</code> is called a little before auto ending is triggered or just before manual ending is called
  * <code>ending</code> is called when auto ending is triggered or just before slot ending
  *
- * @param {{entry: Entry, cues: {endingSoon: {time: function(number):number, callback: function}, ending: {time: function(number):number, callback: function}}, videoFetcher: function(Entry):Video, playersPool: PlayersPool, transitionDuration: number}} config
+ * @param {Config} config
  * @returns {PlaybackSlot}
  */
 function playbackSlot(config) {
 
+  /** @type {Config} */
   var _config = config,
     _playersPool = _config.playersPool,
 
@@ -201,7 +211,6 @@ function playbackSlot(config) {
 
   /**
    * @typedef PlaybackSlot
-   * @name PlaybackSlot
    */
   var PlaybackSlot = {
     /**

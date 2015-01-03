@@ -196,7 +196,6 @@ function playerYoutube(config) {
 
   /**
    * @typedef PlayerYoutube
-   * @name PlayerYoutube
    * @extend Player
    */
   var PlayerYoutube = {

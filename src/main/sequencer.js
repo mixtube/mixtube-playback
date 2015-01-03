@@ -2,8 +2,7 @@
   'use strict';
 
   /**
-   * @name Promise
-   * @typedef Promise
+   * @typedef {Object} Promise
    * @property {function(function): Promise} then
    * @property {function(function): Promise} catch
    * @property {function(=*): Promise} resolve
@@ -11,7 +10,6 @@
    */
 
   /**
-   * @name Video
    * @typedef {Object} Video
    * @property {string} provider
    * @property {string} id

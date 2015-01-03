@@ -1,38 +1,5 @@
 'use strict';
 
-/**
- * @typedef Player
- * @name Player
- * @interface
- */
-var Player = {
-  provider: '',
-  /**
-   * @param {string} id the video id. This id is opaque and only makes sense for the player implementation.
-   * @returns {Promise}
-   */
-  loadById: function(id) {
-  },
-  /**
-   * @param {{audioGain: number}} config
-   */
-  play: function(config) {
-  },
-  /**
-   * @param {{duration: number}} config
-   */
-  fadeIn: function(config) {
-  },
-  /**
-   * @param {{duration: number}} config
-   * @returns {Promise}
-   */
-  fadeOut: function(config) {
-  },
-  stop: function() {
-  }
-};
-
 var find = require('lodash-node/modern/collections/find'),
   has = require('lodash-node/modern/objects/has');
 
@@ -42,9 +9,8 @@ var find = require('lodash-node/modern/collections/find'),
  */
 function playersPool(config) {
 
-  var _config = config;
-
-  var _playersCacheByProvider = {};
+  var _config = config,
+    _playersCacheByProvider = {};
 
   /**
    * @param {string} provider
@@ -92,7 +58,6 @@ function playersPool(config) {
 
   /**
    * @typedef PlayersPool
-   * @name PlayersPool
    */
   var PlayersPool = {
     getPlayer: getPlayer,
