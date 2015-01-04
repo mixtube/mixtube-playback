@@ -1,31 +1,29 @@
-(function(playback) {
-  'use strict';
+'use strict';
 
-  /**
-   * @param {{additionListener: function(PlaybackSlot}} config
-   * @returns Collection
-   */
-  function collection(config) {
+/**
+ * @param {{additionListener: function(PlaybackSlot}} config
+ * @returns Collection
+ */
+function collection(config) {
 
-    function add(slot) {
-      throw new Error;
-    }
-
-    function remove(slot) {
-      throw new Error;
-    }
-
-    /**
-     * @typedef Collection
-     */
-    var Collection = {
-      add: add,
-      remove: remove
-    };
-
-    return Object.freeze(Collection);
+  function add(slot) {
+    throw new Error;
   }
 
-  playback.collection = collection;
+  function remove(slot) {
+    throw new Error;
+  }
 
-})(window.playback);
+  /**
+   * @name Collection
+   * @typedef Collection
+   */
+  var Collection = {
+    add: add,
+    remove: remove
+  };
+
+  return Object.freeze(Collection);
+}
+
+module.exports = collection;

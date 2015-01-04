@@ -213,14 +213,14 @@ Promise.race = function(iterable) {};
 
 /**
  * @static
- * @param {*} reason
+ * @param {*=} reason
  * @return {Promise}
  */
 Promise.reject = function(reason) {};
 
 /**
  * @static
- * @param {*} value
+ * @param {*=} value
  * @return {Promise}
  */
 Promise.resolve = function(value) {};
@@ -234,7 +234,7 @@ Promise.prototype.catch = function(onRejected) {};
 /**
  *
  * @param {function(value:*)} onFulfilled
- * @param {function(reason:*)} onRejected
+ * @param {function(reason:*)=} onRejected
  * @return {Promise}
  */
 Promise.prototype.then = function(onFulfilled, onRejected) {};
