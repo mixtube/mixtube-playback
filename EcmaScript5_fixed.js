@@ -190,3 +190,51 @@ Date.now = function() {};
  @return {string}
  */
 Date.prototype.toJSON = function() {};
+
+/**
+ * @param {{function(function, function)}} executor
+ * @constructor
+ */
+Promise = function(executor) {};
+
+/**
+ * @static
+ * @param {Array.<Promise>} iterable
+ * @return {Promise}
+ */
+Promise.all = function(iterable) {};
+
+/**
+ * @static
+ * @param {Array.<Promise>} iterable
+ * @return {Promise}
+ */
+Promise.race = function(iterable) {};
+
+/**
+ * @static
+ * @param {*} reason
+ * @return {Promise}
+ */
+Promise.reject = function(reason) {};
+
+/**
+ * @static
+ * @param {*} value
+ * @return {Promise}
+ */
+Promise.resolve = function(value) {};
+
+/**
+ * @param {function(reason:*)} onRejected
+ * @return {Promise}
+ */
+Promise.prototype.catch = function(onRejected) {};
+
+/**
+ *
+ * @param {function(value:*)} onFulfilled
+ * @param {function(reason:*)} onRejected
+ * @return {Promise}
+ */
+Promise.prototype.then = function(onFulfilled, onRejected) {};
