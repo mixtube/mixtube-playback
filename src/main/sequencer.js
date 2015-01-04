@@ -2,6 +2,7 @@
   'use strict';
 
   /**
+   * @name Promise
    * @typedef {Object} Promise
    * @property {function(function): Promise} then
    * @property {function(function): Promise} catch

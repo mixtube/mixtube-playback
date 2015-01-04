@@ -7,77 +7,10 @@ var playersPool = require('../main/playersPool'),
   defaults = require('lodash-node/modern/objects/defaults'),
   constant = require('lodash-node/modern/utilities/constant');
 
-function PlayerFactoryMockBuilder() {
-
-  var loadByIdImpl =
-      jasmine.createSpy('loadById')
-        .and.returnValue(Promise.resolve()),
-    playImpl = jasmine.createSpy('playSpy'),
-    fadeInImpl = jasmine.createSpy('fadeInSpy'),
-    fadeOutImpl = jasmine.createSpy('fadeOutSpy')
-      .and.returnValue(Promise.resolve()),
-    stopImpl = jasmine.createSpy('stopSpy');
-
-  var builder = {
-    withLoadById: function(impl) {
-      loadByIdImpl = impl;
-      return builder;
-    },
-
-    withPlay: function(impl) {
-      playImpl = impl;
-      return builder;
-    },
-
-    withFadeIn: function(impl) {
-      fadeInImpl = impl;
-      return builder;
-    },
-
-    withFadeOut: function(impl) {
-      fadeOutImpl = impl;
-      return builder;
-    },
-
-    withStop: function(impl) {
-      stopImpl = impl;
-      return builder;
-    },
-
-    build: function() {
-      return {
-        canCreatePlayer: function(provider) {
-          return provider === 'mock';
-        },
-        newPlayer: function(provider) {
-          return {
-            get provider() {
-              return provider;
-            },
-            get duration() {
-              return 0;
-            },
-            get currentTime() {
-              return 0;
-            },
-            loadById: loadByIdImpl,
-            play: playImpl,
-            stop: stopImpl,
-            fadeIn: fadeInImpl,
-            fadeOut: fadeOutImpl
-          };
-        }
-      };
-    }
-  };
-
-  return builder;
-}
-
 function always(promise, cb) {
   promise.then(cb, function(err) {
     cb();
-    Promise.reject(err);
+    return Promise.reject(err);
   })
 }
 
@@ -197,14 +130,17 @@ describe('A player slot', function() {
   });
 
   it('starts the slot properly', function(done) {
-    var playSpy, fadeInSpy;
+    var playSpy,
+      fadeInSpy,
+      transitionDuration = 10;
+
     var pool = playersPoolMock(function(props, player) {
+      props.duration = transitionDuration * 4;
       playSpy = player.play;
       fadeInSpy = player.fadeIn;
       return player;
     });
 
-    var transitionDuration = 10;
     var slot = playerSlotMock({
       playersPool: pool,
       transitionDuration: transitionDuration
@@ -312,6 +248,41 @@ describe('A player slot', function() {
     }).toThrow();
   });
 
+  it('adapts transition time if cumulated configured values exceed media duration ', function(done) {
+    var fadeInSpy,
+      fadeOutSpy,
+      playerProps,
+      videoDuration = 20000,
+      transitionDuration = videoDuration * 10;
+
+    var pool = playersPoolMock(function(props, player) {
+      playerProps = props;
+      playerProps.duration = videoDuration / 1000;
+      fadeInSpy = player.fadeIn;
+      fadeOutSpy = player.fadeOut;
+      return player;
+    });
+
+    var slot = playerSlotMock({
+      playersPool: pool,
+      transitionDuration: transitionDuration
+    });
+
+    slot.load().then(function() {
+
+      slot.start();
+
+      playerProps.currentTime = (videoDuration - 500) / 1000;
+
+      slot.end().then(function() {
+
+        expect(fadeInSpy).toHaveBeenCalledWith({duration: videoDuration / 2});
+        expect(fadeOutSpy).toHaveBeenCalledWith({duration: 500});
+
+        done();
+      });
+    });
+  });
 
   it('runs "ending soon" and "ending" in schedule', function(done) {
     var fadeOutSpy,
@@ -323,6 +294,7 @@ describe('A player slot', function() {
 
     var pool = playersPoolMock(function(props, player) {
       playerProps = props;
+      playerProps.duration = videoDuration / 1000;
       fadeOutSpy = player.fadeOut.and.callFake(function(config) {
         return new Promise(function(success) {
           setTimeout(success, config.duration);
@@ -352,8 +324,6 @@ describe('A player slot', function() {
 
     slot.load().then(function() {
 
-      playerProps.duration = videoDuration / 1000;
-
       slot.start();
 
       // we are going to execute 3 "cues handler" cycles each time with a different currentTime value
@@ -379,6 +349,5 @@ describe('A player slot', function() {
 
       done();
     });
-  })
-
+  });
 });

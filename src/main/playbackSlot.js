@@ -27,7 +27,7 @@ var States = {};
   });
 
 /**
- * @typedef {Object} Config
+ * @typedef {Object} playbackSlotConfig
  * @property {Entry} entry
  * @property {{endingSoon: {time: function(number):number, callback: function}}} cues
  * @property {function(Entry):Video} videoFetcher
@@ -40,12 +40,12 @@ var States = {};
  * <code>endingSoon</code> is called a little before auto ending is triggered or just before manual ending is called
  * <code>ending</code> is called when auto ending is triggered or just before slot ending
  *
- * @param {Config} config
+ * @param {playbackSlotConfig} config
  * @returns {PlaybackSlot}
  */
 function playbackSlot(config) {
 
-  /** @type {Config} */
+  /** @type {playbackSlotConfig} */
   var _config = config,
     _playersPool = _config.playersPool,
 
@@ -54,6 +54,7 @@ function playbackSlot(config) {
     _player = null,
     _loadPromise = null,
     _endPromise = null,
+    _duration = null,
 
     _stopCuesHandler = null,
 
@@ -63,10 +64,6 @@ function playbackSlot(config) {
     callEndingOnce = once(function() {
       sandBoxedExecute(_config.cues.ending.callback)
     });
-
-  function getVideo() {
-    return _config.videoFetcher(_config.entry);
-  }
 
   function checkState(requiredState, method) {
     if (_state !== requiredState) {
@@ -87,6 +84,18 @@ function playbackSlot(config) {
       console.error('An error occurred while executing the sand-boxed function %s', fn);
       console.error(e);
     }
+  }
+
+  function getCurrentTime() {
+    return _player.currentTime * 1000;
+  }
+
+  function getDuration() {
+    return _player.duration * 1000;
+  }
+
+  function getVideo() {
+    return _config.videoFetcher(_config.entry);
   }
 
   function dispose() {
@@ -111,6 +120,7 @@ function playbackSlot(config) {
         _player.loadById(video.id)
           .then(function() {
             _state = States.loaded;
+            _duration = getDuration();
           })
           .catch(function(e) {
             end();
@@ -135,7 +145,8 @@ function playbackSlot(config) {
     _state = States.playing;
 
     _player.play(config);
-    _player.fadeIn({duration: _config.transitionDuration});
+    // make sure the transition does not exceed half of the media duration
+    _player.fadeIn({duration: Math.min(_duration / 2, _config.transitionDuration)});
     _stopCuesHandler = startCuesHandler();
   }
 
@@ -156,7 +167,8 @@ function playbackSlot(config) {
 
         _endPromise =
           _player
-            .fadeOut({duration: _config.transitionDuration})
+            // make sure the transition will be finished before the end of the media
+            .fadeOut({duration: Math.min(_duration - getCurrentTime(), _config.transitionDuration)})
             .then(function() {
               _player.stop();
             });
@@ -178,15 +190,14 @@ function playbackSlot(config) {
    * @returns {function} the stop function for the cues handler
    */
   function startCuesHandler() {
-    var duration = _player.duration * 1000,
-      autoEndTime = Math.min(duration - _config.transitionDuration,
-        _config.cues.ending.time(duration)),
+    var autoEndTime = Math.min(_duration - _config.transitionDuration,
+        _config.cues.ending.time(_duration)),
       endingSoonTime = Math.min(autoEndTime,
-        _config.cues.endingSoon.time(duration)),
+        _config.cues.endingSoon.time(_duration)),
       previousTime = 0;
 
     var intervalId = setInterval(function cuesHandlerIntervalExecutor() {
-      var currentTime = _player.currentTime * 1000;
+      var currentTime = getCurrentTime();
 
       if (previousTime < currentTime) {
         // consider only progress in time

@@ -45,7 +45,7 @@ function playerFactory(config) {
   }
 
   /**
-   * @typedef PlayerFactory
+   * @name PlayerFactory
    */
   var PlayerFactory = {
     canCreatePlayer: canCreatePlayer,
