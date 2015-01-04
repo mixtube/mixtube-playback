@@ -248,12 +248,12 @@ describe('A player slot', function() {
     }).toThrow();
   });
 
-  it('adapts transition time if cumulated configured values exceed media duration ', function(done) {
+  it('adapts transition time if exceed media duration ', function(done) {
     var fadeInSpy,
       fadeOutSpy,
       playerProps,
       videoDuration = 20000,
-      transitionDuration = videoDuration * 10;
+      transitionDuration = videoDuration * 2;
 
     var pool = playersPoolMock(function(props, player) {
       playerProps = props;
@@ -262,6 +262,7 @@ describe('A player slot', function() {
       fadeOutSpy = player.fadeOut;
       return player;
     });
+    
 
     var slot = playerSlotMock({
       playersPool: pool,
@@ -272,12 +273,13 @@ describe('A player slot', function() {
 
       slot.start();
 
-      playerProps.currentTime = (videoDuration - 500) / 1000;
+      var remainingTime = 500;
+      playerProps.currentTime = (videoDuration - remainingTime) / 1000;
 
       slot.end().then(function() {
 
-        expect(fadeInSpy).toHaveBeenCalledWith({duration: videoDuration / 2});
-        expect(fadeOutSpy).toHaveBeenCalledWith({duration: 500});
+        expect(fadeInSpy).toHaveBeenCalledWith({duration: videoDuration});
+        expect(fadeOutSpy).toHaveBeenCalledWith({duration: remainingTime});
 
         done();
       });

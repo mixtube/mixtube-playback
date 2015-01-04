@@ -90,10 +90,6 @@ function playbackSlot(config) {
     return _player.currentTime * 1000;
   }
 
-  function getDuration() {
-    return _player.duration * 1000;
-  }
-
   function getVideo() {
     return _config.videoFetcher(_config.entry);
   }
@@ -120,7 +116,7 @@ function playbackSlot(config) {
         _player.loadById(video.id)
           .then(function() {
             _state = States.loaded;
-            _duration = getDuration();
+            _duration = _player.duration * 1000;
           })
           .catch(function(e) {
             end();
@@ -145,8 +141,8 @@ function playbackSlot(config) {
     _state = States.playing;
 
     _player.play(config);
-    // make sure the transition does not exceed half of the media duration
-    _player.fadeIn({duration: Math.min(_duration / 2, _config.transitionDuration)});
+    // make sure the transition will be finished before the end of the media
+    _player.fadeIn({duration: Math.min(_duration, _config.transitionDuration)});
     _stopCuesHandler = startCuesHandler();
   }
 
@@ -190,10 +186,14 @@ function playbackSlot(config) {
    * @returns {function} the stop function for the cues handler
    */
   function startCuesHandler() {
-    var autoEndTime = Math.min(_duration - _config.transitionDuration,
-        _config.cues.ending.time(_duration)),
-      endingSoonTime = Math.min(autoEndTime,
-        _config.cues.endingSoon.time(_duration)),
+    var autoEndTime = Math.min(
+        Math.max(0, _config.cues.ending.time(_duration)),
+        _duration - _config.transitionDuration),
+
+      endingSoonTime = Math.min(
+        Math.max(0, _config.cues.endingSoon.time(_duration)),
+        autoEndTime),
+
       previousTime = 0;
 
     var intervalId = setInterval(function cuesHandlerIntervalExecutor() {
