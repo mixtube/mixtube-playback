@@ -222,6 +222,7 @@ function playbackSlot(config) {
 
   /**
    * @typedef PlaybackSlot
+   * @name PlaybackSlot
    */
   var PlaybackSlot = {
     /**

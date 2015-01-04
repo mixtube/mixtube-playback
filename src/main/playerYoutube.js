@@ -196,7 +196,7 @@ function playerYoutube(config) {
 
   /**
    * @typedef PlayerYoutube
-   * @extend Player
+   * @name PlayerYoutube
    */
   var PlayerYoutube = {
     get provider() {

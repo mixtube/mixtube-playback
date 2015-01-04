@@ -46,7 +46,7 @@ function animationFade(config) {
   }
 
   /**
-   * @typedef AnimationFade
+   * @name AnimationFade
    */
   var AnimationFade = {
     start: start,

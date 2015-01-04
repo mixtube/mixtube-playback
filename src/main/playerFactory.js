@@ -5,7 +5,6 @@ var playerYoutube = require('./playerYoutube'),
 
 /**
  * @typedef {Object} Player
- * @interface
  * @property {function(string)} loadById
  * @property {function({audioGain: number})} play
  * @property {function({duration: number})} fadeIn
@@ -45,6 +44,7 @@ function playerFactory(config) {
   }
 
   /**
+   * @typedef PlayerFactory
    * @name PlayerFactory
    */
   var PlayerFactory = {

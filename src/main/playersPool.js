@@ -57,6 +57,7 @@ function playersPool(config) {
   }
 
   /**
+   * @typedef PlayersPool
    * @name PlayersPool
    */
   var PlayersPool = {
