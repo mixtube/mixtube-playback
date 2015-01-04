@@ -38,6 +38,10 @@ gulp.task('watch', function() {
   installWatchify(
     './src/test/playerTests.js',
     './dist/test/playerTests.bundle.js');
+
+  installWatchify(
+    './src/test/sequencerTests.js',
+    './dist/test/sequencerTests.bundle.js');
 });
 
 gulp.task('serve', function() {

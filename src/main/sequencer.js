@@ -1,8 +1,6 @@
 'use strict';
 
-var playersPool = require('./playersPool'),
-  playbackSlot = require('./playbackSlot'),
-  singleton = require('./singleton'),
+var singleton = require('./singleton'),
   collection = require('./collection');
 
 /**
@@ -24,6 +22,7 @@ var playersPool = require('./playersPool'),
  * @property {function(?Entry):Entry} fetchNext
  * @property {function(Entry):Video} fetchVideo
  * @property {function(Video, ?Video)} comingNext
+ * @property {function({entry: Entry, endingSoon: function, ending: function})} playbackSlotProducer
  */
 
 /**
@@ -32,7 +31,7 @@ var playersPool = require('./playersPool'),
  */
 function sequencer(config) {
 
-  var _playersPool = playersPool({});
+  var _config = config;
 
   var _endingSlots = collection({
     additionListener: function(slot) {
@@ -61,7 +60,7 @@ function sequencer(config) {
     additionListener: function(slot) {
       _preloadingSlot.clear();
       slot.start();
-      preload(config.fetchNext(slot.entry));
+      preload(_config.fetchNext(slot.entry));
     },
     removalListener: function(slot) {
       _endingSlots.add(slot);
@@ -69,19 +68,14 @@ function sequencer(config) {
   });
 
   /**
-   *
    * @param {Entry} entry
    * @returns {PlaybackSlot}
    */
   function newPlaybackSlot(entry) {
-    return playbackSlot({
+    return _config.playbackSlotProducer({
       entry: entry,
-      cues: {
-        endingSoon: notifyComingNext,
-        ending: move
-      },
-      fetchVideo: config.fetchVideo,
-      playersPool: _playersPool
+      endingSoon: notifyComingNext,
+      ending: move
     });
   }
 
@@ -93,7 +87,7 @@ function sequencer(config) {
       nextVideo = _preloadingSlot.get().video;
     }
 
-    config.comingNext(_playingSlot.get().video, nextVideo);
+    _config.comingNext(_playingSlot.get().video, nextVideo);
   }
 
   /**
@@ -139,7 +133,7 @@ function sequencer(config) {
   }
 
   function play() {
-    skip(config.fetchNext(null));
+    skip(_config.fetchNext(null));
   }
 
   /**
