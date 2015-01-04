@@ -159,43 +159,6 @@ describe('A player slot', function() {
     });
   });
 
-  it('ends the slot properly when end is called while playing', function(done) {
-    var stopSpy, fadeOutSpy,
-      endingSpy = jasmine.createSpy('endingSpy'),
-      endingSoonSpy = jasmine.createSpy('endingSoonSpy'),
-      transitionDuration = 10;
-
-    var pool = playersPoolMock(function(props, player) {
-      fadeOutSpy = player.fadeOut;
-      stopSpy = player.stop;
-      return player;
-    });
-
-    var slot = playerSlotMock({
-      playersPool: pool,
-      transitionDuration: transitionDuration,
-      cues: {
-        endingSoon: {callback: endingSoonSpy, time: constant(0)},
-        ending: {callback: endingSpy, time: constant(0)}
-      }
-    });
-
-    slot.load().then(function() {
-      slot.start();
-      setTimeout(function() {
-        slot.end().then(function() {
-
-          expect(fadeOutSpy).toHaveBeenCalled();
-          expect(stopSpy).toHaveBeenCalled();
-          expect(endingSpy).toHaveBeenCalled();
-          expect(endingSoonSpy).toHaveBeenCalled();
-
-          done();
-        });
-      }, 0);
-    });
-  });
-
   describe('when a call to load is unsuccessful', function() {
 
     it('returns and reject the promise', function(done) {
@@ -262,7 +225,7 @@ describe('A player slot', function() {
       fadeOutSpy = player.fadeOut;
       return player;
     });
-    
+
 
     var slot = playerSlotMock({
       playersPool: pool,
@@ -286,7 +249,44 @@ describe('A player slot', function() {
     });
   });
 
-  it('runs "ending soon" and "ending" in schedule', function(done) {
+  it('ends the slot properly when end is called (forced end)', function(done) {
+    var stopSpy, fadeOutSpy,
+      endingSpy = jasmine.createSpy('endingSpy'),
+      endingSoonSpy = jasmine.createSpy('endingSoonSpy'),
+      transitionDuration = 10;
+
+    var pool = playersPoolMock(function(props, player) {
+      fadeOutSpy = player.fadeOut;
+      stopSpy = player.stop;
+      return player;
+    });
+
+    var slot = playerSlotMock({
+      playersPool: pool,
+      transitionDuration: transitionDuration,
+      cues: {
+        endingSoon: {callback: endingSoonSpy, time: constant(0)},
+        ending: {callback: endingSpy, time: constant(0)}
+      }
+    });
+
+    slot.load().then(function() {
+      slot.start();
+      setTimeout(function() {
+        slot.end().then(function() {
+
+          expect(fadeOutSpy).toHaveBeenCalled();
+          expect(stopSpy).toHaveBeenCalled();
+          expect(endingSpy).toHaveBeenCalled();
+          expect(endingSoonSpy).toHaveBeenCalled();
+
+          done();
+        });
+      }, 0);
+    });
+  });
+
+  it('runs "ending soon" and "ending" in schedule (auto ending)', function(done) {
     var fadeOutSpy,
       endingSpy = jasmine.createSpy('endingSpy'),
       endingSoonSpy = jasmine.createSpy('endingSoonSpy'),
