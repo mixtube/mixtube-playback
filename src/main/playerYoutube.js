@@ -62,6 +62,11 @@ function playerYoutube(config) {
     });
   }
 
+  function mute() {
+    _ytPlayer.getIframe().style.opacity = 0;
+    _ytPlayer.setVolume(0);
+  }
+
   /**
    * Starts a fade (in / out) animation on the player by altering the opacity and the audio volume.
    *
@@ -74,7 +79,7 @@ function playerYoutube(config) {
    */
   function fade(fadeIn, duration) {
 
-    var iFrame = _ytPlayer.getIframe(),
+    var iFrameStyle = _ytPlayer.getIframe().style,
       volumeMax = _audioGain * 100,
       opacityFrom = fadeIn ? 0 : 1,
       volumeFrom = fadeIn ? 0 : volumeMax;
@@ -83,7 +88,7 @@ function playerYoutube(config) {
       // a fade animation was in progress so we stop it to start a new one
       _fadeAnimationGroup.stop();
       // parse to float to avoid problems in Shifty
-      opacityFrom = parseFloat(iFrame.style.opacity);
+      opacityFrom = parseFloat(iFrameStyle.opacity);
       volumeFrom = _ytPlayer.getVolume();
     }
 
@@ -95,7 +100,7 @@ function playerYoutube(config) {
           from: opacityFrom,
           to: fadeIn ? 1 : 0,
           step: function(value) {
-            iFrame.style.opacity = value;
+            iFrameStyle.opacity = value;
           }
         }),
         volume: animationFade({
@@ -110,11 +115,17 @@ function playerYoutube(config) {
       }
     });
 
-    return _fadeAnimationGroup
+    return _fadeAnimationGroup.start()
       // we rely only on volume animation for its scheduling stability
       // whereas the opacity uses rAF which is throttled
-      .start().volume
-      .then(function() {
+      .volume.then(function() {
+        if (!fadeIn) {
+          // It is very important specially for the opacity since the scheduling functions are different and the
+          // audio animation can end then stop the whole animation group while the UI animation is throttled.
+          // In this case we want to make sure the player is totally "muted" at the end.
+          mute();
+        }
+
         // clear animation reference when done
         _fadeAnimationGroup = null;
       });
