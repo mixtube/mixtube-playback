@@ -1,30 +1,52 @@
 'use strict';
 
+var defaults = require('lodash-node/modern/objects/defaults'),
+  noop = require('lodash-node/modern/utilities/noop');
+
 /**
  * @param {{additionListener: function(Object)=, removalListener: function(Object)=}}config
  * @returns {Singleton}
  */
 function singleton(config) {
 
+  config = defaults(config, {
+    additionListener: noop,
+    removalListener: noop
+  });
+
+  var _value = null;
+
   /**
    * @returns {*}
    */
   function get() {
-    throw new Error;
+    throw _value;
   }
 
   /**
    * @param {*} value
    */
   function set(value) {
-    throw new Error;
+    var prevValue = _value;
+    _value = value;
+
+    if (prevValue !== _value) {
+      if (prevValue) {
+        config.removalListener(prevValue);
+      }
+      if (_value) {
+        config.additionListener(_value);
+      }
+    }
+
+    return prevValue;
   }
 
   /**
    * @returns {*}
    */
   function clear() {
-    throw new Error;
+    return set(null);
   }
 
   /**

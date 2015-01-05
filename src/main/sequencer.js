@@ -1,6 +1,7 @@
 'use strict';
 
-var singleton = require('./singleton'),
+var enumeration = require('./enumeration'),
+  singleton = require('./singleton'),
   collection = require('./collection');
 
 /**
@@ -13,16 +14,27 @@ var singleton = require('./singleton'),
 /**
  * @name Entry
  * @typedef {Object} Entry
- * @property {Video} video
  */
+
+/**
+ * @typedef {Object} States
+ * @property pristine
+ * @property playing
+ * @property paused
+ * @property stopped
+ */
+
+/**
+ * @type {States}
+ */
+var States = enumeration(['pristine', 'playing', 'paused', 'stopped']);
 
 /**
  * @name sequencerConfig
  * @typedef {Object} sequencerConfig
- * @property {function(?Entry):Entry} fetchNext
- * @property {function(Entry):Video} fetchVideo
+ * @property {function(?Entry):Entry} nextEntryProducer
  * @property {function(Video, ?Video)} comingNext
- * @property {function({entry: Entry, endingSoon: function, ending: function})} playbackSlotProducer
+ * @property {function({entry: Entry, endingSoon: function, ending: function}):PlaybackSlot} playbackSlotProducer
  */
 
 /**
@@ -31,7 +43,9 @@ var singleton = require('./singleton'),
  */
 function sequencer(config) {
 
-  var _config = config;
+  var _config = config,
+
+    _state = States.pristine;
 
   var _endingSlots = collection({
     additionListener: function(slot) {
@@ -60,7 +74,7 @@ function sequencer(config) {
     additionListener: function(slot) {
       _preloadingSlot.clear();
       slot.start();
-      preload(_config.fetchNext(slot.entry));
+      preload(_config.nextEntryProducer(slot.entry));
     },
     removalListener: function(slot) {
       _endingSlots.add(slot);
@@ -132,8 +146,22 @@ function sequencer(config) {
     });
   }
 
+  function resume() {
+    throw new Error();
+  }
+
   function play() {
-    skip(_config.fetchNext(null));
+    if (_state === States.pristine || _state === States.stopped) {
+      _state = States.playing;
+      skip(_config.nextEntryProducer(null));
+    } else if(_state === States.paused) {
+      _state = States.playing;
+      resume();
+    }
+  }
+
+  function pause() {
+    throw new Error();
   }
 
   /**
@@ -142,6 +170,7 @@ function sequencer(config) {
    */
   var Sequencer = {
     play: play,
+    pause: pause,
     skip: skip
   };
 

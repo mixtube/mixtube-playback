@@ -70,7 +70,7 @@ describe('A player pool', function() {
 
 describe('A player slot', function() {
 
-  function playerSlotMock(config) {
+  function playbackSlotWithDefaults(config) {
     var defaultConfig = {
       entry: {mockMedia: {mediaSource: 'mock', mediaKey: 'mockId'}},
       videoFetcher: function(entry) {
@@ -106,7 +106,7 @@ describe('A player slot', function() {
 
     var pool = playersPoolMock();
 
-    var slot = playerSlotMock({
+    var slot = playbackSlotWithDefaults({
       playersPool: pool,
       entry: entryMock,
       videoFetcher: videoFetcherSpy
@@ -121,7 +121,7 @@ describe('A player slot', function() {
     var pool = playersPoolMock();
     var loadSuccessSpy = jasmine.createSpy('loadSuccessSpy');
 
-    var slot = playerSlotMock({playersPool: pool});
+    var slot = playbackSlotWithDefaults({playersPool: pool});
 
     always(slot.load().then(loadSuccessSpy), function() {
       expect(loadSuccessSpy).toHaveBeenCalled();
@@ -141,7 +141,7 @@ describe('A player slot', function() {
       return player;
     });
 
-    var slot = playerSlotMock({
+    var slot = playbackSlotWithDefaults({
       playersPool: pool,
       transitionDuration: transitionDuration
     });
@@ -168,7 +168,7 @@ describe('A player slot', function() {
         return player;
       });
 
-      var slot = playerSlotMock({playersPool: pool});
+      var slot = playbackSlotWithDefaults({playersPool: pool});
 
       always(slot.load().then(null, loadFailSpy), function() {
         expect(loadFailSpy).toHaveBeenCalled();
@@ -185,7 +185,7 @@ describe('A player slot', function() {
         return player;
       });
 
-      var slot = playerSlotMock({
+      var slot = playbackSlotWithDefaults({
         playersPool: pool,
         cues: {
           endingSoon: {callback: endingSoonSpy},
@@ -204,7 +204,7 @@ describe('A player slot', function() {
 
   it('triggers an error when start is called before load', function() {
 
-    var slot = playerSlotMock();
+    var slot = playbackSlotWithDefaults();
 
     expect(function() {
       slot.start();
@@ -227,7 +227,7 @@ describe('A player slot', function() {
     });
 
 
-    var slot = playerSlotMock({
+    var slot = playbackSlotWithDefaults({
       playersPool: pool,
       transitionDuration: transitionDuration
     });
@@ -261,7 +261,7 @@ describe('A player slot', function() {
       return player;
     });
 
-    var slot = playerSlotMock({
+    var slot = playbackSlotWithDefaults({
       playersPool: pool,
       transitionDuration: transitionDuration,
       cues: {
@@ -305,7 +305,7 @@ describe('A player slot', function() {
       return player;
     });
 
-    var slot = playerSlotMock({
+    var slot = playbackSlotWithDefaults({
       playersPool: pool,
       transitionDuration: videoDuration / 4,
       cues: {

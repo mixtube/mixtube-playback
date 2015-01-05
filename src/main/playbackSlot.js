@@ -1,6 +1,7 @@
 'use strict';
 
-var once = require('lodash-node/modern/functions/once');
+var enumeration = require('./enumeration'),
+  once = require('lodash-node/modern/functions/once');
 
 /**
  * @typedef {Object} States
@@ -11,20 +12,6 @@ var once = require('lodash-node/modern/functions/once');
  * @property ending
  * @property ended
  */
-var States = {};
-['pristine', 'loading', 'loaded', 'playing', 'ending', 'ended']
-  .forEach(function(stateName) {
-    var state = {
-      toString: function() {
-        return stateName;
-      }
-    };
-    Object.defineProperty(States, stateName, {
-      get: function() {
-        return state;
-      }
-    });
-  });
 
 /**
  * @typedef {Object} playbackSlotConfig
@@ -34,6 +21,11 @@ var States = {};
  * @property {PlayersPool} playersPool
  * @property {number} transitionDuration
  */
+
+/**
+ * @type {States}
+ */
+var States = enumeration(['pristine', 'loading', 'loaded', 'playing', 'ending', 'ended']);
 
 /**
  * Cues:
