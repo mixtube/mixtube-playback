@@ -5,7 +5,8 @@ var playersPool = require('../main/playersPool'),
   playerFactoryMock = require('./playerFactoryMock'),
   playersPoolMock = require('./playersPoolMock'),
   defaults = require('lodash-node/modern/objects/defaults'),
-  constant = require('lodash-node/modern/utilities/constant');
+  constant = require('lodash-node/modern/utilities/constant'),
+  defer = require('lodash-node/modern/functions/defer');
 
 function always(promise, cb) {
   promise.then(cb, function(err) {
@@ -272,7 +273,7 @@ describe('A player slot', function() {
 
     slot.load().then(function() {
       slot.start();
-      setTimeout(function() {
+      defer(function() {
         slot.end().then(function() {
 
           expect(fadeOutSpy).toHaveBeenCalled();
@@ -282,7 +283,7 @@ describe('A player slot', function() {
 
           done();
         });
-      }, 0);
+      });
     });
   });
 

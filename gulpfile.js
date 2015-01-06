@@ -18,7 +18,10 @@ function installWatchify(src, dest) {
         debug: true
       }));
 
-  bundler.on('update', rebundle);
+  bundler.on('update', function() {
+    gutil.log('Bundle "' + src + '" updated');
+    rebundle();
+  });
 
   function rebundle() {
     return bundler.bundle()

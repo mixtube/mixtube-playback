@@ -2,7 +2,9 @@
 
 var enumeration = require('./enumeration'),
   singleton = require('./singleton'),
-  collection = require('./collection');
+  collection = require('./collection'),
+  promiseDone = require('./promiseDone'),
+  console = require('console-browserify');
 
 /**
  * @name Video
@@ -74,7 +76,10 @@ function sequencer(config) {
     additionListener: function(slot) {
       _preloadingSlot.clear();
       slot.start();
-      preload(_config.nextEntryProducer(slot.entry));
+      var nextEntry = _config.nextEntryProducer(slot.entry);
+      if (nextEntry) {
+        preload(nextEntry);
+      }
     },
     removalListener: function(slot) {
       _endingSlots.add(slot);
@@ -108,6 +113,10 @@ function sequencer(config) {
    * @param {Entry} entry
    */
   function preload(entry) {
+    if (!entry) {
+      throw new TypeError('An entry is expected but found ' + entry);
+    }
+
     var slot = newPlaybackSlot(entry);
     // setting the pre-loading singleton will automatically starts loading the slot
     _preloadingSlot.set(slot);
@@ -121,11 +130,12 @@ function sequencer(config) {
   function move() {
     var slot = _preloadingSlot.get();
     if (slot) {
-      slot.load().then(function() {
-        if (slot === _preloadingSlot.clear()) {
-          _playingSlot.set(slot);
-        }
-      });
+      promiseDone(
+        slot.load().then(function() {
+          if (slot === _preloadingSlot.clear()) {
+            _playingSlot.set(slot);
+          }
+        }));
     }
   }
 
@@ -137,13 +147,18 @@ function sequencer(config) {
    * @param {Entry} entry
    */
   function skip(entry) {
+    if (!entry) {
+      throw new TypeError('An entry is expected but found ' + entry);
+    }
+
     var slot = newPlaybackSlot(entry);
     _skippingSlot.set(slot);
-    slot.load().then(function() {
-      if (slot === _skippingSlot.clear()) {
-        _playingSlot.set(slot);
-      }
-    });
+    promiseDone(
+      slot.load().then(function() {
+        if (slot === _skippingSlot.clear()) {
+          _playingSlot.set(slot);
+        }
+      }));
   }
 
   function resume() {
@@ -152,9 +167,12 @@ function sequencer(config) {
 
   function play() {
     if (_state === States.pristine || _state === States.stopped) {
-      _state = States.playing;
-      skip(_config.nextEntryProducer(null));
-    } else if(_state === States.paused) {
+      var firstEntry = _config.nextEntryProducer(null);
+      if (firstEntry) {
+        _state = States.playing;
+        skip(firstEntry);
+      }
+    } else if (_state === States.paused) {
       _state = States.playing;
       resume();
     }
