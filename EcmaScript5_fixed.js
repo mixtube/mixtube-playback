@@ -192,7 +192,7 @@ Date.now = function() {};
 Date.prototype.toJSON = function() {};
 
 /**
- * @param {{function(function, function)}} executor
+ * @param {function(function, function)} executor
  * @constructor
  */
 Promise = function(executor) {};

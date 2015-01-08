@@ -6,7 +6,9 @@ var sequencer = require('../main/sequencer'),
   defer = require('lodash-node/modern/functions/defer'),
   after = require('lodash-node/modern/functions/after'),
   times = require('lodash-node/modern/utilities/times'),
-  identity = require('lodash-node/modern/utilities/identity');
+  identity = require('lodash-node/modern/utilities/identity'),
+  last = require('lodash-node/modern/arrays/last'),
+  initial = require('lodash-node/modern/arrays/initial');
 
 
 describe('A sequencer', function() {
@@ -31,14 +33,13 @@ describe('A sequencer', function() {
         slot.end.and.returnValue(Promise.resolve());
         return slot;
       },
-      comingNext: function(currentVideo, comingVideo) {
-
-      }
+      comingNext: jasmine.createSpy('comingNextSpy')
     };
     return sequencer(defaults({}, inter(defaultConfig), defaultConfig));
   }
 
-  var _entries;
+  var _entries,
+    _nextEntryProducer;
 
   beforeEach(function() {
     _entries = times(5, function(idx) {
@@ -49,7 +50,18 @@ describe('A sequencer', function() {
           return id;
         }
       };
-    })
+    });
+
+    _nextEntryProducer = function(entry) {
+      var idx = 0;
+      if (entry) {
+        idx = _entries.indexOf(entry) + 1;
+      }
+      if (idx >= _entries.length) {
+        return null;
+      }
+      return _entries[idx];
+    };
   });
 
   it('calls nextEntryProducer with a "null" arguments on first call to play', function() {
@@ -68,16 +80,7 @@ describe('A sequencer', function() {
   it('executes the right sequence when manually skipping to an entry', function(done) {
     var nextEntryProducerSpy =
         jasmine.createSpy('nextEntryProducerSpy')
-          .and.callFake(function(entry) {
-            var idx = 0;
-            if (entry) {
-              idx = _entries.indexOf(entry) + 1;
-            }
-            if (idx >= _entries.length) {
-              return null;
-            }
-            return _entries[idx];
-          }),
+          .and.callFake(_nextEntryProducer),
 
       playbackSlotProducerSpy = jasmine.createSpy('nextEntryProducerSpy');
 
@@ -128,6 +131,96 @@ describe('A sequencer', function() {
     defer(function() {
       seq.skip(_entries[3]);
     });
+  });
+
+  it('schedules the preloaded entry properly so that it gets played on automated ending', function(done) {
+
+    var comingNextSpy;
+    var seq = sequencerWithDefaults(function(seqDefaultCfg) {
+
+      comingNextSpy = seqDefaultCfg.comingNext;
+
+      return {
+        nextEntryProducer: _nextEntryProducer,
+        playbackSlotProducer: function(producerCfg) {
+          var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+
+          // fake auto ending
+          slot.start.and.callFake(function() {
+            defer(function() {
+              producerCfg.endingSoon();
+              defer(function() {
+                producerCfg.ending();
+                finishGate();
+              });
+            });
+          });
+
+          return slot;
+        }
+      }
+    });
+
+    var finishGate = after(_entries.length, function() {
+
+      expect(comingNextSpy.calls.count()).toEqual(_entries.length);
+
+      done();
+    });
+
+    seq.play();
+  });
+
+  it('keeps the correct entry to play after many consecutive skip calls', function(done) {
+
+    var slots = [];
+
+    var seq = sequencerWithDefaults(function(seqDefaultCfg) {
+      return {
+        nextEntryProducer: _nextEntryProducer,
+        playbackSlotProducer: function(producerCfg) {
+          var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+          slots.push(slot);
+          return slot;
+        }
+      }
+    });
+
+    seq.play();
+
+    // browses the list of entry and skip until the last one
+    new Promise(function(resolve) {
+      (function deferredWhile(idx) {
+        if (idx < _entries.length) {
+          defer(function() {
+            seq.skip(_entries[idx]);
+            deferredWhile(idx + 1);
+          });
+        } else {
+          resolve();
+        }
+      })(0);
+    }).then(function() {
+
+        // all but the last slot (the one playing right now with no next entry) should have been ended
+
+        initial(slots).forEach(function(slot) {
+          expect(slot.end).toHaveBeenCalled();
+        });
+
+        expect(last(slots).end).not.toHaveBeenCalled();
+        expect(last(slots).entry).toEqual(last(_entries));
+
+        done();
+      });
+  });
+
+  it('pauses and resumes properly', function() {
+
+  });
+
+  it('it resumes properly if skip was called while paused', function() {
+
   });
 
 });

@@ -74,7 +74,6 @@ function sequencer(config) {
 
   var _playingSlot = singleton({
     additionListener: function(slot) {
-      _preloadingSlot.clear();
       slot.start();
       var nextEntry = _config.nextEntryProducer(slot.entry);
       if (nextEntry) {
@@ -132,7 +131,8 @@ function sequencer(config) {
     if (slot) {
       promiseDone(
         slot.load().then(function() {
-          if (slot === _preloadingSlot.clear()) {
+          if (slot === _preloadingSlot.get()) {
+            _preloadingSlot.clear();
             _playingSlot.set(slot);
           }
         }));
@@ -154,8 +154,11 @@ function sequencer(config) {
     var slot = newPlaybackSlot(entry);
     _skippingSlot.set(slot);
     promiseDone(
-      slot.load().then(function() {
-        if (slot === _skippingSlot.clear()) {
+      slot.load().then(function skipLoadFulfilled() {
+        if (slot === _skippingSlot.get()) {
+          _skippingSlot.clear();
+          // preloaded slot became irrelevant because of skipping
+          _preloadingSlot.set(null);
           _playingSlot.set(slot);
         }
       }));
@@ -163,10 +166,12 @@ function sequencer(config) {
 
   function resume() {
     throw new Error();
+
   }
 
   function play() {
     if (_state === States.pristine || _state === States.stopped) {
+      // todo should we rely on this behavior for play or should we expect skip to be called before
       var firstEntry = _config.nextEntryProducer(null);
       if (firstEntry) {
         _state = States.playing;

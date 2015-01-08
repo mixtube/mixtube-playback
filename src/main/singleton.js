@@ -20,7 +20,7 @@ function singleton(config) {
    * @returns {*}
    */
   function get() {
-    throw _value;
+    return _value;
   }
 
   /**
@@ -43,10 +43,14 @@ function singleton(config) {
   }
 
   /**
-   * @returns {*}
+   * Clears the stored value without calling the "removalListener"
+   *
+   * @returns {*} the value stored before clearing
    */
   function clear() {
-    return set(null);
+    var value = _value;
+    _value = null;
+    return value;
   }
 
   /**
