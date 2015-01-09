@@ -4,48 +4,42 @@ var defaults = require('lodash-node/modern/objects/defaults'),
   noop = require('lodash-node/modern/utilities/noop');
 
 /**
- * @param {{additionListener: function(Object)=, removalListener: function(Object)=}}config
- * @returns {Singleton}
+ * @template T
+ * @param {{init: ?T, changedListener: function(T, T=)=}} config
+ * @returns {Singleton.<T>}
  */
 function singleton(config) {
 
   config = defaults(config, {
-    additionListener: noop,
-    removalListener: noop
+    init: null,
+    changedListener: noop
   });
 
-  var _value = null;
+  var _value = config.init;
 
   /**
-   * @returns {*}
+   * @returns {T}
    */
   function get() {
     return _value;
   }
 
   /**
-   * @param {*} value
+   * @param {T} value
    */
   function set(value) {
     var prevValue = _value;
     _value = value;
 
-    if (prevValue !== _value) {
-      if (prevValue) {
-        config.removalListener(prevValue);
-      }
-      if (_value) {
-        config.additionListener(_value);
-      }
-    }
+    if (prevValue !== _value) config.changedListener(prevValue, _value);
 
     return prevValue;
   }
 
   /**
-   * Clears the stored value without calling the "removalListener"
+   * Clears the stored value without triggering the "changedListener"
    *
-   * @returns {*} the value stored before clearing
+   * @returns {T} the value stored before clearing
    */
   function clear() {
     var value = _value;
@@ -54,6 +48,7 @@ function singleton(config) {
   }
 
   /**
+   * @template T
    * @name Singleton
    * @typedef Singleton
    */

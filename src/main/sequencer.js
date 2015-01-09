@@ -47,43 +47,47 @@ function sequencer(config) {
 
   var _config = config,
 
-    _state = States.pristine;
+    _state = singleton({
+      init: States.pristine,
+      changedListener: function(prevState, state) {
 
-  var _endingSlots = collection({
-    additionListener: function(slot) {
-      slot.end().then(function() {
-        _endingSlots.remove(slot);
-      });
-    }
-  });
-
-  var _preloadingSlot = singleton({
-    additionListener: function(slot) {
-      slot.load();
-    },
-    removalListener: function(slot) {
-      slot.end();
-    }
-  });
-
-  var _skippingSlot = singleton({
-    removalListener: function(slot) {
-      _endingSlots.add(slot);
-    }
-  });
-
-  var _playingSlot = singleton({
-    additionListener: function(slot) {
-      slot.start();
-      var nextEntry = _config.nextEntryProducer(slot.entry);
-      if (nextEntry) {
-        preload(nextEntry);
       }
-    },
-    removalListener: function(slot) {
-      _endingSlots.add(slot);
-    }
-  });
+    }),
+
+    _endingSlots = collection({
+      addedListener: function(slot) {
+        slot.end().then(function() {
+          _endingSlots.remove(slot);
+        });
+      }
+    }),
+
+    _preloadingSlot = singleton({
+      changedListener: function(prevSlot, slot) {
+        if (prevSlot) prevSlot.end();
+        if (slot) slot.load();
+      }
+    }),
+
+    _skippingSlot = singleton({
+      changedListener: function(prevSlot) {
+        if (prevSlot) _endingSlots.add(prevSlot);
+      }
+    }),
+
+    _playingSlot = singleton({
+      changedListener: function(prevSlot, slot) {
+        if (prevSlot) _endingSlots.add(prevSlot);
+
+        if (slot) {
+          slot.start();
+          var nextEntry = _config.nextEntryProducer(slot.entry);
+          if (nextEntry) {
+            preload(nextEntry);
+          }
+        }
+      }
+    });
 
   /**
    * @param {Entry} entry
@@ -166,19 +170,18 @@ function sequencer(config) {
 
   function resume() {
     throw new Error();
-
   }
 
   function play() {
-    if (_state === States.pristine || _state === States.stopped) {
+    if (_state.get() === States.pristine || _state.get() === States.stopped) {
       // todo should we rely on this behavior for play or should we expect skip to be called before
       var firstEntry = _config.nextEntryProducer(null);
       if (firstEntry) {
-        _state = States.playing;
+        _state.set(States.playing);
         skip(firstEntry);
       }
-    } else if (_state === States.paused) {
-      _state = States.playing;
+    } else if (_state.get() === States.paused) {
+      _state.set(States.playing);
       resume();
     }
   }

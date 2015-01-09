@@ -5,13 +5,14 @@ var defaults = require('lodash-node/modern/objects/defaults'),
   pull = require('lodash-node/modern/arrays/pull');
 
 /**
- * @param {{additionListener: function(Object}} config
- * @returns Collection
+ * @template T
+ * @param {{addedListener: function(T)=}} config
+ * @returns Collection.<T>
  */
 function collection(config) {
 
   config = defaults(config, {
-    additionListener: noop
+    addedListener: noop
   });
 
   var _values = [];
@@ -19,7 +20,7 @@ function collection(config) {
   function add(slot) {
     if (slot) {
       _values.push(slot);
-      config.additionListener(slot);
+      config.addedListener(slot);
     }
   }
 
@@ -28,6 +29,7 @@ function collection(config) {
   }
 
   /**
+   * @template T
    * @name Collection
    * @typedef Collection
    */
