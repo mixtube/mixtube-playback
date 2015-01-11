@@ -186,6 +186,16 @@ function playerYoutube(config) {
     _ytPlayer.playVideo();
   }
 
+  function pause() {
+    _fadeAnimationGroup.pause();
+    _ytPlayer.pauseVideo();
+  }
+
+  function resume() {
+    _ytPlayer.playVideo();
+    _fadeAnimationGroup.resume();
+  }
+
   function stop() {
     _ytPlayer.stopVideo();
   }
@@ -221,6 +231,8 @@ function playerYoutube(config) {
     },
     loadById: loadById,
     play: play,
+    pause: pause,
+    resume: resume,
     stop: stop,
     fadeIn: fadeIn,
     fadeOut: fadeOut

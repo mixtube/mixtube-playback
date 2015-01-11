@@ -28,6 +28,10 @@ function collection(config) {
     pull(_values, slot);
   }
 
+  function forEach(callback) {
+    _values.forEach(callback);
+  }
+
   /**
    * @template T
    * @name Collection
@@ -35,7 +39,8 @@ function collection(config) {
    */
   var Collection = {
     add: add,
-    remove: remove
+    remove: remove,
+    forEach: forEach
   };
 
   return Object.freeze(Collection);

@@ -9,23 +9,20 @@ var noop = require('lodash-node/modern/utilities/noop');
  */
 function animationFade(config) {
 
-  var _tween = new Tweenable();
-  if (config.schedule !== 'ui') {
-    _tween.setScheduleFunction(setTimeout);
-  }
+  var _tween = new Tweenable(),
 
-  var _tweenConfig = {
-    duration: config.duration,
-    step: function(state) {
-      config.step(state.value);
+    _tweenConfig = {
+      duration: config.duration,
+      step: function(state) {
+        config.step(state.value);
+      },
+      from: {value: config.from},
+      to: {value: config.to}
     },
-    from: {value: config.from},
-    to: {value: config.to}
-  };
 
   // set in the start method Promise. A tween can be resolved because of a normal fade termination or because of a
   // premature call to stop
-  var _tweenResolve = noop;
+    _tweenResolve = noop;
 
   function startPromiseExecutor(resolve) {
     _tweenResolve = resolve;
@@ -40,16 +37,31 @@ function animationFade(config) {
     return new Promise(startPromiseExecutor);
   }
 
+  function pause() {
+    _tween.pause();
+  }
+
+  function resume() {
+    _tween.resume();
+  }
+
   function stop() {
     _tween.stop();
     _tweenResolve();
   }
 
+  if (config.schedule !== 'ui') {
+    _tween.setScheduleFunction(setTimeout);
+  }
+
   /**
+   * @typedef AnimationFade
    * @name AnimationFade
    */
   var AnimationFade = {
     start: start,
+    pause: pause,
+    resume: resume,
     stop: stop
   };
 

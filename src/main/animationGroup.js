@@ -20,6 +20,18 @@ function animationGroup(config) {
     });
   }
 
+  function pause() {
+    forOwn(_config.animations, function(animation) {
+      animation.pause();
+    });
+  }
+
+  function resume() {
+    forOwn(_config.animations, function(animation) {
+      animation.resume();
+    });
+  }
+
   function stop() {
     forOwn(_config.animations, function(animation) {
       animation.stop();
@@ -31,6 +43,8 @@ function animationGroup(config) {
    */
   var AnimationGroup = {
     start: start,
+    pause: pause,
+    resume: resume,
     stop: stop
   };
 

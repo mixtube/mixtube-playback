@@ -4,9 +4,10 @@ var playersPool = require('../main/playersPool'),
   playbackSlot = require('../main/playbackSlot'),
   playerFactoryMock = require('./playerFactoryMock'),
   playersPoolMock = require('./playersPoolMock'),
+  defer = require('./defer'),
   defaults = require('lodash-node/modern/objects/defaults'),
   constant = require('lodash-node/modern/utilities/constant'),
-  defer = require('lodash-node/modern/functions/defer');
+  identity = require('lodash-node/modern/utilities/identity');
 
 function always(promise, cb) {
   promise.then(cb, function(err) {
@@ -71,7 +72,13 @@ describe('A player pool', function() {
 
 describe('A player slot', function() {
 
-  function playbackSlotWithDefaults(config) {
+  /**
+   * @param {function(Object)=} inter
+   * @returns {PlaybackSlot}
+   */
+  function playbackSlotWithDefaults(inter) {
+    inter = inter || identity;
+
     var defaultConfig = {
       entry: {mockMedia: {mediaSource: 'mock', mediaKey: 'mockId'}},
       videoFetcher: function(entry) {
@@ -95,7 +102,9 @@ describe('A player slot', function() {
       transitionDuration: 1000
     };
 
-    return playbackSlot(defaults({}, config, defaultConfig));
+    var slot = playbackSlot(defaults({}, inter(defaultConfig), defaultConfig));
+    slot.proceed();
+    return slot;
   }
 
   it('calls videoFetcher with the given entry when load is called', function() {
@@ -107,10 +116,12 @@ describe('A player slot', function() {
 
     var pool = playersPoolMock();
 
-    var slot = playbackSlotWithDefaults({
-      playersPool: pool,
-      entry: entryMock,
-      videoFetcher: videoFetcherSpy
+    var slot = playbackSlotWithDefaults(function() {
+      return {
+        playersPool: pool,
+        entry: entryMock,
+        videoFetcher: videoFetcherSpy
+      }
     });
 
     slot.load();
@@ -122,7 +133,9 @@ describe('A player slot', function() {
     var pool = playersPoolMock();
     var loadSuccessSpy = jasmine.createSpy('loadSuccessSpy');
 
-    var slot = playbackSlotWithDefaults({playersPool: pool});
+    var slot = playbackSlotWithDefaults(function() {
+      return {playersPool: pool};
+    });
 
     always(slot.load().then(loadSuccessSpy), function() {
       expect(loadSuccessSpy).toHaveBeenCalled();
@@ -142,21 +155,83 @@ describe('A player slot', function() {
       return player;
     });
 
-    var slot = playbackSlotWithDefaults({
-      playersPool: pool,
-      transitionDuration: transitionDuration
+    var slot = playbackSlotWithDefaults(function() {
+      return {
+        playersPool: pool,
+        transitionDuration: transitionDuration
+      }
     });
 
     slot.load().then(function() {
       var config = {audioGain: 0};
       slot.start(config);
 
-      expect(playSpy).toHaveBeenCalledWith(config);
-      expect(fadeInSpy).toHaveBeenCalledWith({duration: transitionDuration});
+      fadeInSpy.and.callFake(function() {
+        expect(playSpy).toHaveBeenCalledWith(config);
+        expect(fadeInSpy).toHaveBeenCalledWith({duration: transitionDuration});
+
+        slot.end();
+
+        done();
+      });
+    });
+  });
+
+
+  it('does not start when it is suspended', function(done) {
+    var playSpy,
+
+      pool = playersPoolMock(function(props, player) {
+        playSpy = player.play;
+        return player;
+      }),
+
+      slot = playbackSlotWithDefaults(function() {
+        return {
+          playersPool: pool
+        }
+      });
+
+    slot.suspend();
+
+    slot.load().then(function() {
+      var config = {audioGain: 0};
+      slot.start(config);
+
+      defer(function() {
+        expect(playSpy).not.toHaveBeenCalled();
+
+        done();
+      });
+    });
+  });
+
+  it('does not end when it is suspended', function(done) {
+    var fadeOutSpy,
+
+      pool = playersPoolMock(function(props, player) {
+        fadeOutSpy = player.fadeOut;
+        return player;
+      }),
+
+      slot = playbackSlotWithDefaults(function() {
+        return {
+          playersPool: pool
+        }
+      });
+
+    slot.load().then(function() {
+      var config = {audioGain: 0};
+      slot.start(config);
+      slot.suspend();
 
       slot.end();
 
-      done();
+      defer(function() {
+        expect(fadeOutSpy).not.toHaveBeenCalled();
+
+        done();
+      });
     });
   });
 
@@ -169,7 +244,8 @@ describe('A player slot', function() {
         return player;
       });
 
-      var slot = playbackSlotWithDefaults({playersPool: pool});
+
+      var slot = playbackSlotWithDefaults(constant({playersPool: pool}));
 
       always(slot.load().then(null, loadFailSpy), function() {
         expect(loadFailSpy).toHaveBeenCalled();
@@ -186,13 +262,13 @@ describe('A player slot', function() {
         return player;
       });
 
-      var slot = playbackSlotWithDefaults({
+      var slot = playbackSlotWithDefaults(constant({
         playersPool: pool,
         cues: {
           endingSoon: {callback: endingSoonSpy},
           ending: {callback: endingSpy}
         }
-      });
+      }));
 
       always(slot.load(), function() {
         expect(pool.releasePlayer).toHaveBeenCalled();
@@ -208,7 +284,7 @@ describe('A player slot', function() {
     var slot = playbackSlotWithDefaults();
 
     expect(function() {
-      slot.start();
+      slot.start({audioGain: 0});
     }).toThrow();
   });
 
@@ -228,14 +304,14 @@ describe('A player slot', function() {
     });
 
 
-    var slot = playbackSlotWithDefaults({
+    var slot = playbackSlotWithDefaults(constant({
       playersPool: pool,
       transitionDuration: transitionDuration
-    });
+    }));
 
     slot.load().then(function() {
 
-      slot.start();
+      slot.start({audioGain: 0});
 
       var remainingTime = 500;
       playerProps.currentTime = (videoDuration - remainingTime) / 1000;
@@ -262,14 +338,14 @@ describe('A player slot', function() {
       return player;
     });
 
-    var slot = playbackSlotWithDefaults({
+    var slot = playbackSlotWithDefaults(constant({
       playersPool: pool,
       transitionDuration: transitionDuration,
       cues: {
         endingSoon: {callback: endingSoonSpy, time: constant(0)},
         ending: {callback: endingSpy, time: constant(0)}
       }
-    });
+    }));
 
     slot.load().then(function() {
       slot.start();
@@ -289,6 +365,7 @@ describe('A player slot', function() {
 
   it('runs "ending soon" and "ending" in schedule (auto ending)', function(done) {
     var fadeOutSpy,
+      playSpy,
       endingSpy = jasmine.createSpy('endingSpy'),
       endingSoonSpy = jasmine.createSpy('endingSoonSpy'),
       videoDuration = 20000,
@@ -306,7 +383,7 @@ describe('A player slot', function() {
       return player;
     });
 
-    var slot = playbackSlotWithDefaults({
+    var slot = playbackSlotWithDefaults(constant({
       playersPool: pool,
       transitionDuration: videoDuration / 4,
       cues: {
@@ -321,36 +398,38 @@ describe('A player slot', function() {
           }, callback: endingSpy
         }
       }
-    });
-
-    jasmine.clock().install();
+    }));
 
     slot.load().then(function() {
 
-      slot.start();
+      jasmine.clock().install();
 
-      // we are going to execute 3 "cues handler" cycles each time with a different currentTime value
+      slot.start({audioGain: 0});
 
-      playerProps.currentTime = playerProps.duration * 1 / 4;
-      jasmine.clock().tick(cuesHandlerInterval);
-      expect(endingSoonSpy).not.toHaveBeenCalled();
-      expect(endingSpy).not.toHaveBeenCalled();
+      defer(function() {
+        // we are going to execute 3 "cues handler" cycles each time with a different currentTime value
 
-      playerProps.currentTime = playerProps.duration * 2.1 / 4;
-      jasmine.clock().tick(cuesHandlerInterval);
-      expect(endingSoonSpy).toHaveBeenCalled();
-      expect(endingSpy).not.toHaveBeenCalled();
+        playerProps.currentTime = playerProps.duration * 1 / 4;
+        jasmine.clock().tick(cuesHandlerInterval);
+        expect(endingSoonSpy).not.toHaveBeenCalled();
+        expect(endingSpy).not.toHaveBeenCalled();
 
-      playerProps.currentTime = playerProps.duration * 3.1 / 4;
-      jasmine.clock().tick(cuesHandlerInterval);
-      expect(endingSpy).toHaveBeenCalled();
+        playerProps.currentTime = playerProps.duration * 2.1 / 4;
+        jasmine.clock().tick(cuesHandlerInterval);
+        expect(endingSoonSpy).toHaveBeenCalled();
+        expect(endingSpy).not.toHaveBeenCalled();
 
-      expect(endingSoonSpy.calls.count()).toEqual(1);
-      expect(endingSpy.calls.count()).toEqual(1);
+        playerProps.currentTime = playerProps.duration * 3.1 / 4;
+        jasmine.clock().tick(cuesHandlerInterval);
+        expect(endingSpy).toHaveBeenCalled();
 
-      jasmine.clock().uninstall();
+        expect(endingSoonSpy.calls.count()).toEqual(1);
+        expect(endingSpy.calls.count()).toEqual(1);
 
-      done();
+        jasmine.clock().uninstall();
+
+        done();
+      });
     });
   });
 });

@@ -19,7 +19,7 @@ var enumeration = require('./enumeration'),
  */
 
 /**
- * @typedef {Object} States
+ * @typedef {Object} SequencerStates
  * @property pristine
  * @property playing
  * @property paused
@@ -27,7 +27,7 @@ var enumeration = require('./enumeration'),
  */
 
 /**
- * @type {States}
+ * @type {SequencerStates}
  */
 var States = enumeration(['pristine', 'playing', 'paused', 'stopped']);
 
@@ -50,7 +50,15 @@ function sequencer(config) {
     _state = singleton({
       init: States.pristine,
       changedListener: function(prevState, state) {
-
+        if (state === States.playing) {
+          forEachSlot(function(slot) {
+            slot.proceed();
+          });
+        } else if (state === States.paused) {
+          forEachSlot(function(slot) {
+            slot.suspend();
+          });
+        }
       }
     }),
 
@@ -89,16 +97,29 @@ function sequencer(config) {
       }
     });
 
+  function forEachSlot(callback) {
+    [_preloadingSlot, _skippingSlot, _playingSlot]
+      .forEach(function(singleton) {
+        if (singleton.get()) callback(singleton.get())
+      });
+
+    _endingSlots.forEach(callback);
+  }
+
   /**
    * @param {Entry} entry
    * @returns {PlaybackSlot}
    */
   function newPlaybackSlot(entry) {
-    return _config.playbackSlotProducer({
+    var slot = _config.playbackSlotProducer({
       entry: entry,
       endingSoon: notifyComingNext,
       ending: move
     });
+
+    if (_state.get() === States.paused) slot.suspend();
+
+    return slot;
   }
 
   function notifyComingNext() {
@@ -168,26 +189,12 @@ function sequencer(config) {
       }));
   }
 
-  function resume() {
-    throw new Error();
-  }
-
   function play() {
-    if (_state.get() === States.pristine || _state.get() === States.stopped) {
-      // todo should we rely on this behavior for play or should we expect skip to be called before
-      var firstEntry = _config.nextEntryProducer(null);
-      if (firstEntry) {
-        _state.set(States.playing);
-        skip(firstEntry);
-      }
-    } else if (_state.get() === States.paused) {
-      _state.set(States.playing);
-      resume();
-    }
+    _state.set(States.playing);
   }
 
   function pause() {
-    throw new Error();
+    _state.set(States.paused);
   }
 
   /**

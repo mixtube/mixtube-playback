@@ -1,14 +1,15 @@
 'use strict';
 
 var enumeration = require('./enumeration'),
+  barrier = require('./barrier'),
   once = require('lodash-node/modern/functions/once');
 
 /**
- * @typedef {Object} States
+ * @typedef {Object} PlaybackSlotStates
  * @property pristine
  * @property loading
  * @property loaded
- * @property playing
+ * @property running
  * @property ending
  * @property ended
  */
@@ -23,9 +24,9 @@ var enumeration = require('./enumeration'),
  */
 
 /**
- * @type {States}
+ * @type {PlaybackSlotStates}
  */
-var States = enumeration(['pristine', 'loading', 'loaded', 'playing', 'ending', 'ended']);
+var States = enumeration(['pristine', 'loading', 'loaded', 'running', 'ending', 'ended']);
 
 /**
  * Cues:
@@ -42,6 +43,9 @@ function playbackSlot(config) {
     _playersPool = _config.playersPool,
 
     _state = States.pristine,
+
+    /** @type {Barrier} */
+    _proceedingBarrier = barrier(),
 
     _player = null,
     _loadPromise = null,
@@ -90,6 +94,46 @@ function playbackSlot(config) {
     _playersPool.releasePlayer(_player);
   }
 
+  function startProceed(config) {
+    _state = States.running;
+
+    _player.play(config);
+    // make sure the transition will be finished before the end of the media
+    _player.fadeIn({duration: Math.min(_duration, _config.transitionDuration)});
+    _stopCuesHandler = startCuesHandler();
+  }
+
+  function endProceed() {
+    if (!_endPromise) {
+      if (_state === States.running) {
+        _state = States.ending;
+        _stopCuesHandler();
+
+        // make sure the cues are called while ending if it has not been done before
+        callEndingSoonOnce();
+        callEndingOnce();
+
+        _endPromise =
+          _player
+            // make sure the transition will be finished before the end of the media
+            .fadeOut({duration: Math.min(_duration - getCurrentTime(), _config.transitionDuration)})
+            .then(function() {
+              _player.stop();
+            });
+      } else {
+        _endPromise = Promise.resolve();
+      }
+
+      _endPromise
+        .then(function() {
+          _state = States.ended;
+          dispose();
+        });
+    }
+
+    return _endPromise;
+  }
+
   /**
    * Tries to load the video associated to the slot's entry.
    *
@@ -130,12 +174,9 @@ function playbackSlot(config) {
   function start(config) {
     checkState(States.loaded, 'start');
 
-    _state = States.playing;
-
-    _player.play(config);
-    // make sure the transition will be finished before the end of the media
-    _player.fadeIn({duration: Math.min(_duration, _config.transitionDuration)});
-    _stopCuesHandler = startCuesHandler();
+    _proceedingBarrier.whenOpen().then(function() {
+      startProceed(config);
+    });
   }
 
   /**
@@ -144,34 +185,21 @@ function playbackSlot(config) {
    * @return {Promise}
    */
   function end() {
-    if (!_endPromise) {
-      if (_state === States.playing) {
-        _state = States.ending;
-        _stopCuesHandler();
+    return _proceedingBarrier.whenOpen().then(endProceed);
+  }
 
-        // make sure the cues are called while ending if it has not been done before
-        callEndingSoonOnce();
-        callEndingOnce();
-
-        _endPromise =
-          _player
-            // make sure the transition will be finished before the end of the media
-            .fadeOut({duration: Math.min(_duration - getCurrentTime(), _config.transitionDuration)})
-            .then(function() {
-              _player.stop();
-            });
-      } else {
-        _endPromise = Promise.resolve();
-      }
-
-      _endPromise
-        .then(function() {
-          _state = States.ended;
-          dispose();
-        });
+  function suspend() {
+    if (_state === States.running || _state === States.ending) {
+      _player.pause();
     }
+    _proceedingBarrier.close();
+  }
 
-    return _endPromise;
+  function proceed() {
+    _proceedingBarrier.open();
+    if (_state === States.running || _state === States.ending) {
+      _player.resume();
+    }
   }
 
   /**
@@ -231,7 +259,9 @@ function playbackSlot(config) {
     },
     load: load,
     start: start,
-    end: end
+    end: end,
+    suspend: suspend,
+    proceed: proceed
   };
 
   return Object.freeze(PlaybackSlot);

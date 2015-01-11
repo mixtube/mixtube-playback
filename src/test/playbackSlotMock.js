@@ -29,7 +29,9 @@ function playbackSlotMock(props) {
     },
     load: jasmine.createSpy('loadSpy'),
     start: jasmine.createSpy('startSpy'),
-    end: jasmine.createSpy('endSpy')
+    end: jasmine.createSpy('endSpy'),
+    suspend: jasmine.createSpy('suspendSpy'),
+    proceed: jasmine.createSpy('proceedSpy')
   };
 
   return Object.freeze(PlaybackSlotMock);
