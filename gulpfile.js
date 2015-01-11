@@ -5,8 +5,7 @@ var path = require('path'),
   gutil = require('gulp-util'),
   source = require('vinyl-source-stream'),
   watchify = require('watchify'),
-  browserify = require('browserify'),
-  browserSync = require('browser-sync');
+  browserify = require('browserify');
 
 function installWatchify(src, dest) {
   var bundler = watchify(
@@ -34,26 +33,14 @@ function installWatchify(src, dest) {
 }
 
 gulp.task('watch', function() {
-  installWatchify(
-    './src/test-legacy/playersPoolTests.js',
-    './dist/test-legacy/playersPoolTests.bundle.js');
 
   installWatchify(
-    './src/test/playerTests.js',
-    './dist/test/playerTests.bundle.js');
+    './src/test/unit/playerSpec.js',
+    './dist/test/unit/playerSpec.bundle.js');
 
   installWatchify(
-    './src/test/sequencerTests.js',
-    './dist/test/sequencerTests.bundle.js');
+    './src/test/unit/sequencerSpec.js',
+    './dist/test/unit/sequencerSpec.bundle.js');
 });
 
-gulp.task('serve', function() {
-  browserSync({
-    server: {
-      baseDir: ['src/test-legacy', 'dist/test-legacy']
-    },
-    open: false
-  });
-});
-
-gulp.task('default', ['watch', 'serve']);
+gulp.task('default', ['watch']);

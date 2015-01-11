@@ -1,7 +1,7 @@
 'use strict';
 
-var playersPool = require('../main/playersPool'),
-  playbackSlot = require('../main/playbackSlot'),
+var playersPool = require('../../main/playersPool'),
+  playbackSlot = require('../../main/playbackSlot'),
   playerFactoryMock = require('./playerFactoryMock'),
   playersPoolMock = require('./playersPoolMock'),
   defer = require('./defer'),

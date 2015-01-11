@@ -1,6 +1,6 @@
 'use strict';
 
-var sequencer = require('../main/sequencer'),
+var sequencer = require('../../main/sequencer'),
   playbackSlotMock = require('./playbackSlotMock'),
   defer = require('./defer'),
   defaults = require('lodash-node/modern/objects/defaults'),
