@@ -109,7 +109,11 @@ function sequencer(config) {
       ending: move
     });
 
-    if (_state.get() === States.paused) slot.suspend();
+    if (_state.get() !== States.paused) {
+      slot.proceed();
+    } else {
+      slot.suspend();
+    }
 
     return slot;
   }

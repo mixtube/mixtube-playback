@@ -30,6 +30,8 @@ var enumeration = require('./enumeration'),
 var States = enumeration(['pristine', 'loading', 'loaded', 'running', 'ending', 'ended']);
 
 /**
+ * Creates a new slot "suspended" by default.
+ *
  * Cues:
  * <code>endingSoon</code> is called a little before auto ending is triggered or just before manual ending is called
  * <code>ending</code> is called when auto ending is triggered or just before slot ending
