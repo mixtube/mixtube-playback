@@ -31,7 +31,7 @@ var sequencer = require('./sequencer'),
 function playback(config) {
 
   /** @type {playbackConfig} */
-  var _config = defaults({}, {comingNext: noop}, config),
+  var _config = defaults({}, config, {comingNext: noop}),
 
     _playersPool = playersPool({
       playerFactory: playerFactory({
