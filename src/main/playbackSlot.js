@@ -2,6 +2,7 @@
 
 var enumeration = require('./enumeration'),
   barrier = require('./barrier'),
+  promiseDone = require('./promiseDone'),
   once = require('lodash-node/modern/functions/once');
 
 /**
@@ -17,8 +18,8 @@ var enumeration = require('./enumeration'),
 /**
  * @typedef {Object} playbackSlotConfig
  * @property {Entry} entry
- * @property {{endingSoon: {time: function(number):number, callback: function}}} cues
- * @property {function(Entry):Video} videoFetcher
+ * @property {{endingSoon: {time: function(number):number, callback: function}, ending: {time: function(number):number, callback: function}}} cues
+ * @property {function(Entry):Video} videoProducer
  * @property {PlayersPool} playersPool
  * @property {number} transitionDuration
  */
@@ -87,17 +88,17 @@ function playbackSlot(config) {
   }
 
   function getVideo() {
-    return _config.videoFetcher(_config.entry);
+    return _config.videoProducer(_config.entry);
   }
 
   function dispose() {
     _playersPool.releasePlayer(_player);
   }
 
-  function startProceed(config) {
+  function startProceed() {
     _state = States.running;
 
-    _player.play(config);
+    _player.play({audioGain: 1});
     // make sure the transition will be finished before the end of the media
     _player.fadeIn({duration: Math.min(_duration, _config.transitionDuration)});
     _stopCuesHandler = startCuesHandler();
@@ -168,15 +169,14 @@ function playbackSlot(config) {
    * Kicks the slot in by starting the player and fading it in.
    *
    * This method can only be called once the loading stage successfully completed.
-   *
-   * @param {{audioGain: number}} config
    */
-  function start(config) {
+  function start() {
     checkState(States.loaded, 'start');
 
-    _proceedingBarrier.whenOpen().then(function() {
-      startProceed(config);
-    });
+    promiseDone(
+      _proceedingBarrier.whenOpen().then(function() {
+        startProceed();
+      }));
   }
 
   /**

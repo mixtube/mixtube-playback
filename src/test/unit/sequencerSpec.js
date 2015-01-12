@@ -8,8 +8,7 @@ var sequencer = require('../../main/sequencer'),
   times = require('lodash-node/modern/utilities/times'),
   identity = require('lodash-node/modern/utilities/identity'),
   last = require('lodash-node/modern/arrays/last'),
-  initial = require('lodash-node/modern/arrays/initial'),
-  wrap = require('lodash-node/modern/functions/wrap.js');
+  initial = require('lodash-node/modern/arrays/initial');
 
 
 describe('A sequencer', function() {

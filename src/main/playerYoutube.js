@@ -5,12 +5,21 @@ var animationGroup = require('./animationGroup'),
   isNumber = require('lodash-node/modern/objects/isNumber'),
   EventEmitter = require('events').EventEmitter;
 
-var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve) {
+var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve, reject) {
   if (!('YT' in global)) {
     if ('onYouTubeIframeAPIReady' in window) {
-      throw new Error('There is already a registered "onYouTubeIframeAPIReady" function');
+      reject(new Error('There is already a registered "onYouTubeIframeAPIReady" function'));
+    } else {
+
+      var apiLoadingTo = setTimeout(function() {
+        reject(new Error('The YouTube player javascript API could not be loaded in a delay of 10s'));
+      }, 10000);
+
+      global.onYouTubeIframeAPIReady = function() {
+        clearTimeout(apiLoadingTo);
+        resolve();
+      };
     }
-    global.onYouTubeIframeAPIReady = resolve;
   } else {
     resolve();
   }
@@ -182,6 +191,9 @@ function playerYoutube(config) {
    * @param {{audioGain: number}} config
    */
   function play(config) {
+    if(!config) {
+      throw new TypeError('A configuration object is expected but found ' + config);
+    }
     _audioGain = isNumber(config.audioGain) ? config.audioGain : 1;
     _ytPlayer.playVideo();
   }

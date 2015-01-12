@@ -3,15 +3,7 @@
 var enumeration = require('./enumeration'),
   singleton = require('./singleton'),
   collection = require('./collection'),
-  promiseDone = require('./promiseDone'),
-  console = require('console-browserify');
-
-/**
- * @name Video
- * @typedef {Object} Video
- * @property {string} provider
- * @property {string} id
- */
+  promiseDone = require('./promiseDone');
 
 /**
  * @name Entry

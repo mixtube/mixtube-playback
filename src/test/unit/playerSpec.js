@@ -81,7 +81,7 @@ describe('A player slot', function() {
 
     var defaultConfig = {
       entry: {mockMedia: {mediaSource: 'mock', mediaKey: 'mockId'}},
-      videoFetcher: function(entry) {
+      videoProducer: function(entry) {
         return {
           provider: entry.mockMedia.mediaSource,
           id: entry.mockMedia.mediaKey
@@ -107,11 +107,11 @@ describe('A player slot', function() {
     return slot;
   }
 
-  it('calls videoFetcher with the given entry when load is called', function() {
+  it('calls videoProducer with the given entry when load is called', function() {
 
     var entryMock = {};
-    var videoFetcherSpy = jasmine
-      .createSpy('videoFetcherSpy')
+    var videoProducerSpy = jasmine
+      .createSpy('videoProducerSpy')
       .and.returnValue({provider: 'mock', id: 'mockId'});
 
     var pool = playersPoolMock();
@@ -120,13 +120,13 @@ describe('A player slot', function() {
       return {
         playersPool: pool,
         entry: entryMock,
-        videoFetcher: videoFetcherSpy
+        videoProducer: videoProducerSpy
       }
     });
 
     slot.load();
 
-    expect(videoFetcherSpy).toHaveBeenCalledWith(entryMock);
+    expect(videoProducerSpy).toHaveBeenCalledWith(entryMock);
   });
 
   it('returns and resolves the promise', function(done) {
