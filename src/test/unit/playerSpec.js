@@ -163,11 +163,10 @@ describe('A player slot', function() {
     });
 
     slot.load().then(function() {
-      var config = {audioGain: 0};
-      slot.start(config);
+      slot.start();
 
       fadeInSpy.and.callFake(function() {
-        expect(playSpy).toHaveBeenCalledWith(config);
+        expect(playSpy).toHaveBeenCalledWith({audioGain: 1});
         expect(fadeInSpy).toHaveBeenCalledWith({duration: transitionDuration});
 
         slot.end();
@@ -404,7 +403,7 @@ describe('A player slot', function() {
 
       jasmine.clock().install();
 
-      slot.start({audioGain: 0});
+      slot.start();
 
       defer(function() {
         // we are going to execute 3 "cues handler" cycles each time with a different currentTime value
