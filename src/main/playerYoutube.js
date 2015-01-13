@@ -191,7 +191,7 @@ function playerYoutube(config) {
    * @param {{audioGain: number}} config
    */
   function play(config) {
-    if(!config) {
+    if (!config) {
       throw new TypeError('A configuration object is expected but found ' + config);
     }
     _audioGain = isNumber(config.audioGain) ? config.audioGain : 1;
@@ -199,13 +199,17 @@ function playerYoutube(config) {
   }
 
   function pause() {
-    _fadeAnimationGroup.pause();
+    if (_fadeAnimationGroup) {
+      _fadeAnimationGroup.pause();
+    }
     _ytPlayer.pauseVideo();
   }
 
   function resume() {
     _ytPlayer.playVideo();
-    _fadeAnimationGroup.resume();
+    if (_fadeAnimationGroup) {
+      _fadeAnimationGroup.resume();
+    }
   }
 
   function stop() {
