@@ -161,7 +161,36 @@ function sequencer(config) {
   }
 
   /**
-   * Skips to the given entry.
+   * @param {*} entry
+   * @returns {Promise}
+   */
+  function skip0(entry) {
+    var slot = newPlaybackSlot(entry);
+    _skippingSlot.set(slot);
+
+    return slot.load()
+      .then(function skipLoadFulfilled() {
+        if (slot === _skippingSlot.get()) {
+          _skippingSlot.clear();
+          // preloaded slot became irrelevant because of skipping
+          _preloadingSlot.set(null);
+          _playingSlot.set(slot);
+        }
+      })
+      .catch(function skipLoadRejected() {
+        if (slot === _skippingSlot.get()) {
+          _skippingSlot.clear();
+          var nextEntry = _config.nextEntryProducer(slot.entry);
+          if (nextEntry) {
+            return skip0(nextEntry);
+          }
+        }
+      });
+  }
+
+  /**
+   * Skips to the given entry and retries in case of loading error until it finds a working entry.
+   *
    *
    * Skipping has priority over moving so that once loaded it will interrupt any playing slot to replace it.
    *
@@ -172,17 +201,7 @@ function sequencer(config) {
       throw new TypeError('An entry is expected but found ' + entry);
     }
 
-    var slot = newPlaybackSlot(entry);
-    _skippingSlot.set(slot);
-    promiseDone(
-      slot.load().then(function skipLoadFulfilled() {
-        if (slot === _skippingSlot.get()) {
-          _skippingSlot.clear();
-          // preloaded slot became irrelevant because of skipping
-          _preloadingSlot.set(null);
-          _playingSlot.set(slot);
-        }
-      }));
+    promiseDone(skip0(entry));
   }
 
   function play() {

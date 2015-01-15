@@ -8,7 +8,8 @@ var sequencer = require('../../main/sequencer'),
   times = require('lodash-node/modern/utilities/times'),
   identity = require('lodash-node/modern/utilities/identity'),
   last = require('lodash-node/modern/arrays/last'),
-  initial = require('lodash-node/modern/arrays/initial');
+  initial = require('lodash-node/modern/arrays/initial'),
+  contains = require('lodash-node/modern/collections/contains');
 
 
 describe('A sequencer', function() {
@@ -294,6 +295,37 @@ describe('A sequencer', function() {
 
         done();
       });
+    }
+  });
+
+  it('it tries the next entry when a slot fails to load when skip was called', function(done) {
+    var lastFailingEntryIdx = 2,
+      startedSlot,
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+        return {
+          nextEntryProducer: _nextEntryProducer,
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+            // make the all slots for the entries from 0 to 2 failing on load
+            if (contains(_entries.slice(0, lastFailingEntryIdx + 1), slot.entry)) {
+              slot.load.and.returnValue(Promise.reject());
+            } else {
+              slot.start.and.callFake(function() {
+                startedSlot = slot;
+                defer(runChecks);
+              });
+            }
+            return slot;
+          }
+        }
+      });
+
+    seq.play();
+    seq.skip(_entries[0]);
+
+    function runChecks() {
+      expect(startedSlot.entry).toEqual(_entries[lastFailingEntryIdx + 1]);
+      done();
     }
   });
 
