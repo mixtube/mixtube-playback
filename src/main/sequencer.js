@@ -65,7 +65,21 @@ function sequencer(config) {
     _preloadingSlot = singleton({
       changedListener: function(prevSlot, slot) {
         if (prevSlot) prevSlot.end();
-        if (slot) slot.load();
+
+        if (slot) {
+          // load the slot and retry in case of loading error until a working entry is found
+          promiseDone(
+            slot.load()
+              .catch(function() {
+                if (slot === _preloadingSlot.get()) {
+                  _preloadingSlot.clear();
+                  var nextEntry = _config.nextEntryProducer(slot.entry);
+                  if (nextEntry) {
+                    preload(nextEntry);
+                  }
+                }
+              }));
+        }
       }
     }),
 
@@ -133,10 +147,6 @@ function sequencer(config) {
    * @param {Entry} entry
    */
   function preload(entry) {
-    if (!entry) {
-      throw new TypeError('An entry is expected but found ' + entry);
-    }
-
     var slot = newPlaybackSlot(entry);
     // setting the pre-loading singleton will automatically starts loading the slot
     _preloadingSlot.set(slot);

@@ -329,4 +329,37 @@ describe('A sequencer', function() {
     }
   });
 
+  it('it tries the next entry when a slot fails to load when move (auto end) was called', function(done) {
+    var lastFailingEntryIdx = 3,
+      startedSlot,
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+        return {
+          nextEntryProducer: _nextEntryProducer,
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+            if (slot.entry == _entries[0]) {
+              defer(producerCfg.ending);
+            } else if (contains(_entries.slice(1, lastFailingEntryIdx + 1), slot.entry)) {
+              // make the all slots for the entries from 1 to 3 failing on load
+              slot.load.and.returnValue(Promise.reject());
+            } else {
+              slot.start.and.callFake(function() {
+                startedSlot = slot;
+                defer(runChecks);
+              });
+            }
+            return slot;
+          }
+        }
+      });
+
+    seq.play();
+    seq.skip(_entries[0]);
+
+    function runChecks() {
+      expect(startedSlot.entry).toEqual(_entries[lastFailingEntryIdx + 1]);
+      done();
+    }
+  });
+
 });
