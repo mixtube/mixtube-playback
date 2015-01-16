@@ -237,10 +237,9 @@ describe('A sequencer', function() {
         }
       });
 
-    seq.play();
-    seq.pause();
     seq.skip(_entries[0]);
 
+    // by default slots should be suspended until play is called
     expect(slot.suspend).toHaveBeenCalled();
 
     seq.play();
