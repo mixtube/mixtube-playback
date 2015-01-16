@@ -11,11 +11,15 @@ var enumeration = require('./enumeration'),
  */
 
 /**
+ *  @typedef {Object} SequencerState
+ */
+
+/**
  * @typedef {Object} SequencerStates
- * @property pristine
- * @property playing
- * @property paused
- * @property stopped
+ * @property {SequencerState} pristine
+ * @property {SequencerState} playing
+ * @property {SequencerState} paused
+ * @property {SequencerState} stopped
  */
 
 /**
@@ -29,6 +33,7 @@ var States = enumeration(['pristine', 'playing', 'paused', 'stopped']);
  * @property {function(?Entry):Entry} nextEntryProducer
  * @property {function(Video, ?Video)} comingNext
  * @property {function({entry: Entry, endingSoon: function, ending: function}):PlaybackSlot} playbackSlotProducer
+ * @property {function(SequencerState, SequencerState)} stateChanged
  */
 
 /**
@@ -51,6 +56,8 @@ function sequencer(config) {
             slot.suspend();
           });
         }
+
+        _config.stateChanged(prevState, state);
       }
     }),
 
@@ -240,5 +247,7 @@ function sequencer(config) {
 
   return Object.freeze(Sequencer);
 }
+
+sequencer.States = States;
 
 module.exports = sequencer;

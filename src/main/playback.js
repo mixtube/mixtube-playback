@@ -14,12 +14,17 @@ var sequencer = require('./sequencer'),
  */
 
 /**
+ * @typedef {SequencerState} PlaybackState
+ */
+
+/**
  * @typedef {Object} playbackConfig
  * @property {function: Element} elementProducer
  * @property {function(*): Video} videoProducer
  * @property {function(*): *} nextEntryProducer
  * @property {number} transitionDuration
  * @property {?function(Video, ?Video)} comingNext
+ * @property {?function(PlaybackState, PlaybackState)} stateChanged
  */
 
 /**
@@ -31,7 +36,7 @@ var sequencer = require('./sequencer'),
 function playback(config) {
 
   /** @type {playbackConfig} */
-  var _config = defaults({}, config, {comingNext: noop}),
+  var _config = defaults({}, config, {comingNext: noop, stateChanged: noop}),
 
     _playersPool = playersPool({
       playerFactory: playerFactory({
@@ -84,5 +89,7 @@ function playback(config) {
 
   return Object.freeze(Playback);
 }
+
+playback.States = sequencer.States;
 
 module.exports = playback;

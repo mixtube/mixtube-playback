@@ -34,7 +34,8 @@ describe('A sequencer', function() {
         slot.end.and.returnValue(Promise.resolve());
         return slot;
       },
-      comingNext: jasmine.createSpy('comingNextSpy')
+      comingNext: jasmine.createSpy('comingNextSpy'),
+      stateChanged: jasmine.createSpy('stateChangedSpy')
     };
     return sequencer(defaults({}, inter(defaultConfig), defaultConfig));
   }
@@ -361,6 +362,10 @@ describe('A sequencer', function() {
       expect(startedSlot.entry).toEqual(_entries[lastFailingEntryIdx + 1]);
       done();
     }
+  });
+
+  it('goes back to pristine state when no more entry is playable', function() {
+
   });
 
 });
