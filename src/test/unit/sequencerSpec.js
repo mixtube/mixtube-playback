@@ -297,7 +297,7 @@ describe('A sequencer', function() {
     }
   });
 
-  it('it tries the next entry when a slot fails to load when skip was called', function(done) {
+  it('tries the next entry when a slot fails to load when skip was called', function(done) {
     var lastFailingEntryIdx = 2,
       startedSlot,
       seq = sequencerWithDefaults(function(seqDefaultCfg) {
@@ -328,7 +328,7 @@ describe('A sequencer', function() {
     }
   });
 
-  it('it tries the next entry when a slot fails to load when move (auto end) was called', function(done) {
+  it('tries the next entry when a slot fails to load when move (auto end) was called', function(done) {
     var lastFailingEntryIdx = 3,
       startedSlot,
       seq = sequencerWithDefaults(function(seqDefaultCfg) {
