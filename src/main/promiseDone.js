@@ -14,8 +14,11 @@ function promiseDone(promise) {
     throw new TypeError('A Promise is expected but found ' + promise);
   }
 
+  // by saving an error here we can keep the calling context which helps for debugging
+  var inContextError = new Error('Unhandled promise rejection detected');
+
   promise.catch(function(err) {
-    err = err || new Error('Unhandled promise rejection detected');
+    err = err || inContextError;
 
     defer(function() {
       throw err;

@@ -338,7 +338,9 @@ describe('A sequencer', function() {
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             if (slot.entry == _entries[0]) {
-              defer(producerCfg.ending);
+              slot.start.and.callFake(function() {
+                defer(producerCfg.ending);
+              });
             } else if (contains(_entries.slice(1, lastFailingEntryIdx + 1), slot.entry)) {
               // make the all slots for the entries from 1 to 3 failing on load
               slot.load.and.returnValue(Promise.reject());

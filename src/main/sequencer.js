@@ -161,12 +161,18 @@ function sequencer(config) {
     var slot = _preloadingSlot.get();
     if (slot) {
       promiseDone(
-        slot.load().then(function() {
-          if (slot === _preloadingSlot.get()) {
-            _preloadingSlot.clear();
-            _playingSlot.set(slot);
-          }
-        }));
+        slot.load()
+          .then(function() {
+            if (slot === _preloadingSlot.get()) {
+              _preloadingSlot.clear();
+              _playingSlot.set(slot);
+            }
+          })
+          .catch(function() {
+            // retry on load failure since the "preloadingSlot" singleton will automatically tries the next entries
+            // a valid slot might be available now
+            move();
+          }));
     }
   }
 
