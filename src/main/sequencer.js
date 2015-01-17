@@ -69,13 +69,13 @@ function sequencer(config) {
           .then(function() {
             _endingSlots.remove(slot);
           })
-          .then(stoppedGuard);
+          .then(probeStateOnSlotEnded);
       }
     }),
 
     _preloadingSlot = singleton({
       changedListener: function(prevSlot, slot) {
-        if (prevSlot) prevSlot.end().then(stoppedGuard);
+        if (prevSlot) prevSlot.end().then(probeStateOnSlotEnded);
 
         if (slot) {
           // load the slot and retry in case of loading error until a working entry is found
@@ -125,9 +125,9 @@ function sequencer(config) {
 
   /**
    * Have to be called anytime a slot ends. It makes sure the state of the sequencer is set to stopped if there
-   * is not more valid entry to playing or about to play.
+   * is not more valid entry playing or about to play.
    */
-  function stoppedGuard() {
+  function probeStateOnSlotEnded() {
     var count = 0;
     forEachSlot(function count() {
       count++;
