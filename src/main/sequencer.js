@@ -36,6 +36,7 @@ var States = enumeration(['pristine', 'playing', 'paused', 'stopped']);
  * @property {function(Video, ?Video)} comingNext
  * @property {function({entry: Entry, endingSoon: function, ending: function}):PlaybackSlot} playbackSlotProducer
  * @property {function(SequencerState, SequencerState)} stateChanged
+ * @property {function(Entry, ?Error)} loadFailed
  */
 
 /**
@@ -66,22 +67,28 @@ function sequencer(config) {
     _endingSlots = collection({
       addedListener: function(slot) {
         slot.end()
-          .then(function() {
+          .then(function slotEndFulfilled() {
             _endingSlots.remove(slot);
-          })
-          .then(probeStateOnSlotEnded);
+            probeStateOnSlotEnded();
+          });
       }
     }),
 
     _preloadingSlot = singleton({
       changedListener: function(prevSlot, slot) {
-        if (prevSlot) prevSlot.end().then(probeStateOnSlotEnded);
+        if (prevSlot) prevSlot.end()
+          .then(function slotEndFulfilled() {
+            probeStateOnSlotEnded();
+          });
 
         if (slot) {
           // load the slot and retry in case of loading error until a working entry is found
           promiseDone(
             slot.load()
-              .catch(function() {
+              .catch(function(error) {
+
+                _config.loadFailed(slot.entry, error);
+
                 if (slot === _preloadingSlot.get()) {
                   _preloadingSlot.clear();
                   var nextEntry = _config.nextEntryProducer(slot.entry);
@@ -128,11 +135,11 @@ function sequencer(config) {
    * is not more valid entry playing or about to play.
    */
   function probeStateOnSlotEnded() {
-    var count = 0;
-    forEachSlot(function count() {
-      count++;
+    var size = 0;
+    forEachSlot(function() {
+      size++;
     });
-    if (count === 0) {
+    if (size === 0) {
       _state.set(States.stopped);
     }
   }
@@ -211,17 +218,25 @@ function sequencer(config) {
     return slot.load()
       .then(function skipLoadFulfilled() {
         if (slot === _skippingSlot.get()) {
+          // clear only because we don't want to discard the skipping slot
+          // we are going to transfer it to the playing state
           _skippingSlot.clear();
           // preloaded slot became irrelevant because of skipping
           _preloadingSlot.set(null);
           _playingSlot.set(slot);
         }
       })
-      .catch(function skipLoadRejected() {
+      .catch(function skipLoadRejected(error) {
+
+        _config.loadFailed(slot.entry, error);
+
         if (slot === _skippingSlot.get()) {
-          _skippingSlot.clear();
           var nextEntry = _config.nextEntryProducer(slot.entry);
-          if (nextEntry) {
+          if (!nextEntry) {
+            // no entry to load we can not skip
+            // make sure the current skipping slot id discarded properly
+            _skippingSlot.set(null);
+          } else {
             return skip0(nextEntry);
           }
         }

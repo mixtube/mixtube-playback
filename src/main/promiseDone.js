@@ -21,6 +21,7 @@ function promiseDone(promise) {
     err = err || inContextError;
 
     defer(function() {
+      console.error(err.stack);
       throw err;
     });
   });

@@ -35,7 +35,8 @@ describe('A sequencer', function() {
         return slot;
       },
       comingNext: jasmine.createSpy('comingNextSpy'),
-      stateChanged: jasmine.createSpy('stateChangedSpy')
+      stateChanged: jasmine.createSpy('stateChangedSpy'),
+      loadFailed: jasmine.createSpy('loadFailedSpy')
     };
     return sequencer(defaults({}, inter(defaultConfig), defaultConfig));
   }
@@ -298,6 +299,42 @@ describe('A sequencer', function() {
     }
   });
 
+  it('calls the loadFailed callback when en entry failed to load', function(done) {
+    var loadFailedSpy,
+      loadError = new Error('mock error'),
+
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+
+        loadFailedSpy = seqDefaultCfg.loadFailed;
+
+        seqDefaultCfg.stateChanged.and.callFake(function(prevState, newState) {
+          if(newState === sequencer.States.stopped) {
+            runChecks();
+          }
+        });
+
+        return {
+          nextEntryProducer: _nextEntryProducer,
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+            slot.load.and.returnValue(Promise.reject(loadError));
+            return slot;
+          }
+        };
+      });
+
+    seq.play();
+    seq.skip(_entries[0]);
+
+    function runChecks() {
+      _entries.forEach(function(entry, idx) {
+        expect(loadFailedSpy.calls.argsFor(idx)).toEqual([entry, loadError]);
+      });
+
+      done();
+    }
+  });
+
   it('tries the next entry when a slot fails to load when skip was called', function(done) {
     var lastFailingEntryIdx = 2,
       startedSlot,
@@ -365,15 +402,13 @@ describe('A sequencer', function() {
   });
 
   it('triggers statesChanged with the right values when calling play / pause', function(done) {
-    var changedStates = [],
+    var stateChangedSpy,
+
       seq = sequencerWithDefaults(function(seqDefaultCfg) {
         var expectedStateChangedCallsCount = 2,
           runChecksAfter2 = after(expectedStateChangedCallsCount, runChecks);
 
-        seqDefaultCfg.stateChanged.and.callFake(function(preState, newState) {
-          changedStates.push({prev: preState, new: newState});
-          runChecksAfter2();
-        });
+        stateChangedSpy = seqDefaultCfg.stateChanged.and.callFake(runChecksAfter2);
         return seqDefaultCfg;
       });
 
@@ -381,17 +416,21 @@ describe('A sequencer', function() {
     seq.pause();
 
     function runChecks() {
-      expect(changedStates[0]).toEqual({prev: sequencer.States.pristine, new: sequencer.States.playing});
-      expect(changedStates[1]).toEqual({prev: sequencer.States.playing, new: sequencer.States.paused});
+      var callsArgs = stateChangedSpy.calls.allArgs();
+      expect(callsArgs[0]).toEqual([sequencer.States.pristine, sequencer.States.playing]);
+      expect(callsArgs[1]).toEqual([sequencer.States.playing, sequencer.States.paused]);
       done();
     }
   });
 
   it('triggers statesChanged with "stopped" state when the last valid entry finished to play', function(done) {
-    var changedStates = [],
+    var stateChangedSpy,
+
       seq = sequencerWithDefaults(function(seqDefaultCfg) {
         var expectedStateChangedCallsCount = 2,
           runChecksAfter2 = after(expectedStateChangedCallsCount, runChecks);
+
+        stateChangedSpy = seqDefaultCfg.stateChanged;
 
         return {
           nextEntryProducer: _nextEntryProducer,
@@ -407,10 +446,7 @@ describe('A sequencer', function() {
             }
             return slot;
           },
-          stateChanged: seqDefaultCfg.stateChanged.and.callFake(function(preState, newState) {
-            changedStates.push({prev: preState, new: newState});
-            runChecksAfter2();
-          })
+          stateChanged: seqDefaultCfg.stateChanged.and.callFake(runChecksAfter2)
         }
       });
 
@@ -418,7 +454,7 @@ describe('A sequencer', function() {
     seq.skip(_entries[0]);
 
     function runChecks() {
-      expect(changedStates[1]).toEqual({prev: sequencer.States.playing, new: sequencer.States.stopped});
+      expect(stateChangedSpy.calls.argsFor(1)).toEqual([sequencer.States.playing, sequencer.States.stopped]);
       done();
     }
   });
