@@ -11,10 +11,12 @@ var enumeration = require('./enumeration'),
  */
 
 /**
- *  @typedef {Object} SequencerState
+ * @name SequencerState
+ * @typedef {Object} SequencerState
  */
 
 /**
+ * @name SequencerStates
  * @typedef {Object} SequencerStates
  * @property {SequencerState} pristine
  * @property {SequencerState} playing
@@ -63,15 +65,17 @@ function sequencer(config) {
 
     _endingSlots = collection({
       addedListener: function(slot) {
-        slot.end().then(function() {
-          _endingSlots.remove(slot);
-        });
+        slot.end()
+          .then(function() {
+            _endingSlots.remove(slot);
+          })
+          .then(stoppedGuard);
       }
     }),
 
     _preloadingSlot = singleton({
       changedListener: function(prevSlot, slot) {
-        if (prevSlot) prevSlot.end();
+        if (prevSlot) prevSlot.end().then(stoppedGuard);
 
         if (slot) {
           // load the slot and retry in case of loading error until a working entry is found
@@ -120,6 +124,20 @@ function sequencer(config) {
   }
 
   /**
+   * Have to be called anytime a slot ends. It makes sure the state of the sequencer is set to stopped if there
+   * is not more valid entry to playing or about to play.
+   */
+  function stoppedGuard() {
+    var count = 0;
+    forEachSlot(function count() {
+      count++;
+    });
+    if (count === 0) {
+      _state.set(States.stopped);
+    }
+  }
+
+  /**
    * @param {Entry} entry
    * @returns {PlaybackSlot}
    */
@@ -160,13 +178,14 @@ function sequencer(config) {
   }
 
   /**
-   * Moves to the pre-loaded entry.
-   *
-   * If there is not pre-loaded slot this function does nothing
+   * Ends the playing slot by nullifying the "playingSlot" singleton and moves to the pre-loaded entry.
    */
   function move() {
     var slot = _preloadingSlot.get();
-    if (slot) {
+    if (!slot) {
+      // can't preload anything but we still have to put the playing slot in the ending stage
+      _playingSlot.set(null);
+    } else {
       promiseDone(
         slot.load()
           .then(function() {
@@ -175,11 +194,9 @@ function sequencer(config) {
               _playingSlot.set(slot);
             }
           })
-          .catch(function() {
-            // retry on load failure since the "preloadingSlot" singleton will automatically tries the next entries
-            // a valid slot might be available now
-            move();
-          }));
+          // retry on load failure since the "preloadingSlot" singleton will automatically tries the next entries
+          // a valid slot may be available now
+          .catch(move));
     }
   }
 

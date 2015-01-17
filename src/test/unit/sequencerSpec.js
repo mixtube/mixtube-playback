@@ -364,8 +364,63 @@ describe('A sequencer', function() {
     }
   });
 
-  it('goes back to pristine state when no more entry is playable', function() {
+  it('triggers statesChanged with the right values when calling play / pause', function(done) {
+    var changedStates = [],
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+        var expectedStateChangedCallsCount = 2,
+          runChecksAfter2 = after(expectedStateChangedCallsCount, runChecks);
 
+        seqDefaultCfg.stateChanged.and.callFake(function(preState, newState) {
+          changedStates.push({prev: preState, new: newState});
+          runChecksAfter2();
+        });
+        return seqDefaultCfg;
+      });
+
+    seq.play();
+    seq.pause();
+
+    function runChecks() {
+      expect(changedStates[0]).toEqual({prev: sequencer.States.pristine, new: sequencer.States.playing});
+      expect(changedStates[1]).toEqual({prev: sequencer.States.playing, new: sequencer.States.paused});
+      done();
+    }
+  });
+
+  it('triggers statesChanged with "stopped" state when the last valid entry finished to play', function(done) {
+    var changedStates = [],
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+        var expectedStateChangedCallsCount = 2,
+          runChecksAfter2 = after(expectedStateChangedCallsCount, runChecks);
+
+        return {
+          nextEntryProducer: _nextEntryProducer,
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+            if (slot.entry == _entries[0]) {
+              slot.start.and.callFake(function() {
+                defer(producerCfg.ending);
+              });
+            } else {
+              // make all the slots for the other entries failing on load
+              slot.load.and.returnValue(Promise.reject());
+            }
+            return slot;
+          },
+          stateChanged: seqDefaultCfg.stateChanged.and.callFake(function(preState, newState) {
+            changedStates.push({prev: preState, new: newState});
+            runChecksAfter2();
+          })
+        }
+      });
+
+    seq.play();
+    seq.skip(_entries[0]);
+
+    function runChecks() {
+      expect(changedStates[1]).toEqual({prev: sequencer.States.playing, new: sequencer.States.stopped});
+      done();
+    }
   });
 
 });
