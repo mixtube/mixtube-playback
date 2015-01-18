@@ -62,7 +62,7 @@ gulp.task('serve', ['watch'], function() {
   browserSync({
     open: false,
     server: {
-      baseDir: baseDirs
+      baseDir: baseDirs.concat(['node_modules/jasmine-core'])
     }
   });
 
