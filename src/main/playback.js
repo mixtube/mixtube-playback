@@ -25,10 +25,14 @@ var sequencer = require('./sequencer'),
  * @property {number} transitionDuration
  * @property {?function(Video, ?Video)} comingNext
  * @property {?function(PlaybackState, PlaybackState)} stateChanged
+ * @property {?function(Entry, ?Error)} loadFailed
  */
 
 /**
  * Creates the "Playback" facade.
+ *
+ * Transition is triggered at "transitionDuration" before the end of the media and the "comingNext: is notified
+ * 2 times "transitionDuration" before the end.
  *
  * @param {playbackConfig} config
  * @returns {Playback}
