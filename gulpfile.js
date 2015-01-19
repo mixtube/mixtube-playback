@@ -52,12 +52,12 @@ gulp.task('watch', function() {
     './dist/test/integration/playlistSpec.bundle.js');
 
   installWatchify(
-    './src/test/integration/web/main.js',
-    './dist/test/integration/web/main.bundle.js');
+    './src/test/integration/playbackSpec.js',
+    './dist/test/integration/playbackSpec.bundle.js');
 });
 
 gulp.task('serve', ['watch'], function() {
-  var baseDirs = ['src/test/integration/web', 'dist/test/integration/web'];
+  var baseDirs = ['src/test/integration/web', 'dist/test/integration'];
 
   browserSync({
     open: false,

@@ -40,7 +40,7 @@ var sequencer = require('./sequencer'),
 function playback(config) {
 
   /** @type {playbackConfig} */
-  var _config = defaults({}, config, {comingNext: noop, stateChanged: noop}),
+  var _config = defaults({}, config, {comingNext: noop, stateChanged: noop, loadFailed: noop}),
 
     _playersPool = playersPool({
       playerFactory: playerFactory({
@@ -78,7 +78,9 @@ function playback(config) {
   var _sequencer = sequencer({
     nextEntryProducer: _config.nextEntryProducer,
     playbackSlotProducer: playbackSlotProducer,
-    comingNext: _config.comingNext
+    comingNext: _config.comingNext,
+    stateChanged: _config.stateChanged,
+    loadFailed: _config.loadFailed
   });
 
   /**

@@ -1,7 +1,11 @@
-html {
-    box-sizing: border-box;
+.jasmine_html-reporter {
+  margin-bottom: 0;
 }
 
-*, *:before, *:after {
-    box-sizing: inherit;
+.stage {
+  box-sizing: border-box;
+}
+
+.stage *, .stage *:before, .stage *:after {
+  box-sizing: inherit;
 }
