@@ -7,7 +7,7 @@ var animationGroup = require('./animationGroup'),
 
 var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve, reject) {
   if (!('YT' in global)) {
-    if ('onYouTubeIframeAPIReady' in window) {
+    if ('onYouTubeIframeAPIReady' in global) {
       reject(new Error('There is already a registered "onYouTubeIframeAPIReady" function'));
     } else {
 
@@ -26,7 +26,11 @@ var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve, reject) {
 });
 
 /**
- * @param {{elementProducer: function(): Element}} config
+ * Creates a PlayerYoutube instance.
+ *
+ * To work it needs the YT Iframe JS API to be available on the global scope.
+ *
+ * @param {{elementProducer: function(): Element, debug: {duration: number}}} config
  * @returns {PlayerYoutube}
  */
 function playerYoutube(config) {
@@ -243,7 +247,12 @@ function playerYoutube(config) {
       return _ytPlayer.getCurrentTime();
     },
     get duration() {
-      return _ytPlayer.getDuration();
+      var realDuration = _ytPlayer.getDuration();
+      if (_config.debug.duration < 0) {
+        return realDuration;
+      } else {
+        return Math.min(_config.debug.duration, realDuration);
+      }
     },
     loadById: loadById,
     play: play,

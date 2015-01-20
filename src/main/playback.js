@@ -26,6 +26,7 @@ var sequencer = require('./sequencer'),
  * @property {?function(Video, ?Video)} comingNext
  * @property {?function(PlaybackState, PlaybackState)} stateChanged
  * @property {?function(Entry, ?Error)} loadFailed
+ * @property {?{mediaDuration: number}} debug
  */
 
 /**
@@ -40,11 +41,21 @@ var sequencer = require('./sequencer'),
 function playback(config) {
 
   /** @type {playbackConfig} */
-  var _config = defaults({}, config, {comingNext: noop, stateChanged: noop, loadFailed: noop}),
+  var _config = defaults({}, config, {
+      comingNext: noop,
+      stateChanged: noop,
+      loadFailed: noop,
+      debug: {
+        mediaDuration: -1
+      }
+    }),
 
     _playersPool = playersPool({
       playerFactory: playerFactory({
-        elementProducer: _config.elementProducer
+        elementProducer: _config.elementProducer,
+        debug: {
+          duration: _config.debug.mediaDuration
+        }
       })
     });
 

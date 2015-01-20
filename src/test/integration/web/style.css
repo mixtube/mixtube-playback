@@ -9,3 +9,7 @@
 .stage *, .stage *:before, .stage *:after {
   box-sizing: inherit;
 }
+
+.player-wrapper {
+  width: 25%;
+}

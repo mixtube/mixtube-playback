@@ -14,7 +14,7 @@ var playerYoutube = require('./playerYoutube'),
 
 
 /**
- * @param {{elementProducer: function(): Element}} config
+ * @param {{elementProducer: function():Element, debug: {duration: number}}} config
  * @returns {PlayerFactory}
  */
 function playerFactory(config) {
@@ -39,7 +39,10 @@ function playerFactory(config) {
     }
 
     return _playersFactories[provider]({
-      elementProducer: _config.elementProducer
+      elementProducer: _config.elementProducer,
+      debug: {
+        duration: _config.debug.duration
+      }
     });
   }
 
