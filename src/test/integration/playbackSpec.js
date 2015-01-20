@@ -1,6 +1,9 @@
 'use strict';
 
 var playback = require('../../main/playback'),
+  describe = jasmine.getEnv().describe,
+  beforeEach = jasmine.getEnv().beforeEach,
+  afterEach = jasmine.getEnv().afterEach,
   it = jasmine.getEnv().it,
   ONE_HOUR = 1000 * 60 * 60;
 
