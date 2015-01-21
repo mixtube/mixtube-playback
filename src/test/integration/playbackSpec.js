@@ -1,13 +1,15 @@
 'use strict';
 
 var playback = require('../../main/playback'),
+  delay = require('lodash-node/modern/functions/delay'),
   identity = require('lodash-node/modern/utilities/identity'),
   defaults = require('lodash-node/modern/objects/defaults'),
   describe = jasmine.getEnv().describe,
   beforeEach = jasmine.getEnv().beforeEach,
   afterEach = jasmine.getEnv().afterEach,
   it = jasmine.getEnv().it,
-  ONE_HOUR = 1000 * 60 * 60;
+  ONE_HOUR = 1000 * 60 * 60,
+  ONE_SECOND = 1000;
 
 describe('Mixtube Playback', function() {
 
@@ -81,6 +83,37 @@ describe('Mixtube Playback', function() {
 
     pb.skip(_entries[0]);
     pb.play();
+
+  }, ONE_HOUR);
+
+  it('plays the the last skipped to video when skip occurred while paused', function(done) {
+
+    var pb = playbackWithDefaults(function() {
+      return {
+        stateChanged: function(prevState, state) {
+          if (state === playback.States.stopped) {
+            done();
+          }
+        }
+      };
+    });
+
+    pb.play();
+    pb.skip(_entries[0]);
+
+    delay(function() {
+      pb.pause();
+      pb.skip(_entries[1]);
+
+      delay(function() {
+        pb.skip(_entries[3]);
+
+        delay(function() {
+          pb.play();
+        }, ONE_SECOND);
+      }, ONE_SECOND);
+    }, ONE_SECOND);
+
 
   }, ONE_HOUR);
 
