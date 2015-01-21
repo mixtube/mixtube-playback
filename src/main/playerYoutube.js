@@ -3,6 +3,7 @@
 var animationGroup = require('./animationGroup'),
   animationFade = require('./animationFade'),
   isNumber = require('lodash-node/modern/objects/isNumber'),
+  has = require('lodash-node/modern/objects/has'),
   EventEmitter = require('events').EventEmitter;
 
 var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve, reject) {
@@ -25,12 +26,18 @@ var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve, reject) {
   }
 });
 
+// only one mapping supported right now
+var DEBUG_QUALITY_MAPPINGS = Object.freeze({
+  low: 'small',
+  default: 'default'
+});
+
 /**
  * Creates a PlayerYoutube instance.
  *
  * To work it needs the YT Iframe JS API to be available on the global scope.
  *
- * @param {{elementProducer: function(): Element, debug: {duration: number}}} config
+ * @param {{elementProducer: function(): Element, debug: {duration: number, quality: string}}} config
  * @returns {PlayerYoutube}
  */
 function playerYoutube(config) {
@@ -39,7 +46,8 @@ function playerYoutube(config) {
     _ytPlayerPromise = null,
     _ytPlayer = null,
     _fadeAnimationGroup = null,
-    _audioGain = null;
+    _audioGain = null,
+    _playbackQuality = 'default';
 
   // we have to use an external event mechanism since the YT API doesn't provide a working removeEventListener
   // see https://code.google.com/p/gdata-issues/issues/detail?id=6700
@@ -170,6 +178,7 @@ function playerYoutube(config) {
       _emitter.on('error', loadErrorListener);
 
       ytPlayer.loadVideoById(id);
+      ytPlayer.setPlaybackQuality(_playbackQuality);
     }
   }
 
@@ -233,6 +242,10 @@ function playerYoutube(config) {
    */
   function fadeOut(config) {
     return fade(false, config.duration);
+  }
+
+  if (has(DEBUG_QUALITY_MAPPINGS, _config.debug.quality)) {
+    _playbackQuality = DEBUG_QUALITY_MAPPINGS[_config.debug.quality];
   }
 
   /**

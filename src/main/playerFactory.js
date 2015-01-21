@@ -12,18 +12,29 @@ var playerYoutube = require('./playerYoutube'),
  * @property {function} stop
  */
 
+/**
+ * @typedef {Object} playerFactoryDebug
+ * @property {number} duration the forced duration of the medias in seconds
+ * @property {string} quality the forced quality for the medias (supported values: low, default)
+ */
 
 /**
- * @param {{elementProducer: function():Element, debug: {duration: number}}} config
+ * @typedef {Object} playerFactoryConfig
+ * @property {function():Element} elementProducer
+ * @property {playerFactoryDebug} debug
+ */
+
+/**
+ * @param {playerFactoryConfig} config
  * @returns {PlayerFactory}
  */
 function playerFactory(config) {
 
-  var _config = config;
-
-  var _playersFactories = {
-    youtube: playerYoutube
-  };
+  /** @type {playbackConfig} */
+  var _config = config,
+    _playersFactories = {
+      youtube: playerYoutube
+    };
 
   function canCreatePlayer(provider) {
     return has(_playersFactories, provider);
@@ -41,7 +52,8 @@ function playerFactory(config) {
     return _playersFactories[provider]({
       elementProducer: _config.elementProducer,
       debug: {
-        duration: _config.debug.duration
+        duration: _config.debug.duration,
+        quality: _config.debug.quality
       }
     });
   }

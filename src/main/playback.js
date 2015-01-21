@@ -18,6 +18,12 @@ var sequencer = require('./sequencer'),
  */
 
 /**
+ * @typedef {Object} playbackDebug
+ * @property {number} mediaDuration the forced duration of the medias in seconds
+ * @property {number} mediaQuality the forced quality for the medias (supported values: low, default)
+ */
+
+/**
  * @typedef {Object} playbackConfig
  * @property {function: Element} elementProducer
  * @property {function(*): Video} videoProducer
@@ -26,7 +32,7 @@ var sequencer = require('./sequencer'),
  * @property {?function(Video, ?Video)} comingNext
  * @property {?function(PlaybackState, PlaybackState)} stateChanged
  * @property {?function(Entry, ?Error)} loadFailed
- * @property {?{mediaDuration: number}} debug
+ * @property {?playbackDebug} debug
  */
 
 /**
@@ -46,7 +52,8 @@ function playback(config) {
       stateChanged: noop,
       loadFailed: noop,
       debug: {
-        mediaDuration: -1
+        mediaDuration: -1,
+        mediaQuality: 'default'
       }
     }),
 
@@ -54,7 +61,8 @@ function playback(config) {
       playerFactory: playerFactory({
         elementProducer: _config.elementProducer,
         debug: {
-          duration: _config.debug.mediaDuration
+          duration: _config.debug.mediaDuration,
+          quality: _config.debug.mediaQuality
         }
       })
     });

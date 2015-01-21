@@ -44,14 +44,6 @@ gulp.task('watch', function() {
     './dist/test/unit/sequencerSpec.bundle.js');
 
   installWatchify(
-    './src/test/integration/playlistSpec.js',
-    './dist/test/integration/playlistSpec.bundle.js');
-
-  installWatchify(
-    './src/test/integration/playlistSpec.js',
-    './dist/test/integration/playlistSpec.bundle.js');
-
-  installWatchify(
     './src/test/integration/playbackSpec.js',
     './dist/test/integration/playbackSpec.bundle.js');
 });

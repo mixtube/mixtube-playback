@@ -48,7 +48,8 @@ describe('Mixtube Playback', function() {
         console.groupEnd();
       },
       debug: {
-        mediaDuration: (2 * defaultTransitionDuration + 1000) / 1000
+        mediaDuration: (2 * defaultTransitionDuration + 2000) / 1000,
+        mediaQuality: 'low'
       }
     };
 
