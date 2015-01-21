@@ -80,8 +80,10 @@ function playbackSlot(config) {
     try {
       fn();
     } catch (e) {
-      console.error('An error occurred while executing the sand-boxed function %s', fn);
-      console.error(e);
+      console.group('An error occurred while executing the sand-boxed function');
+      console.log(fn);
+      console.error(e.stack);
+      console.groupEnd();
     }
   }
 

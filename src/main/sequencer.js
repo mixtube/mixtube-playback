@@ -152,7 +152,9 @@ function sequencer(config) {
     var slot = _config.playbackSlotProducer({
       entry: entry,
       endingSoon: notifyComingNext,
-      ending: move
+      ending: function newSlotEnding() {
+        move(slot);
+      }
     });
 
     if (_state.get() === States.playing) {
@@ -172,6 +174,8 @@ function sequencer(config) {
       nextVideo = _preloadingSlot.get().video;
     }
 
+    throw new TypeError();
+
     _config.comingNext(_playingSlot.get().video, nextVideo);
   }
 
@@ -186,24 +190,32 @@ function sequencer(config) {
 
   /**
    * Ends the playing slot by nullifying the "playingSlot" singleton and moves to the pre-loaded entry.
+   *
+   * A call to this function is honored only when the given slot is the one currently playing.
+   *
+   * @param {PlaybackSlot} commandingSlot
    */
-  function move() {
-    var slot = _preloadingSlot.get();
-    if (!slot) {
-      // can't preload anything but we still have to put the playing slot in the ending stage
-      _playingSlot.set(null);
-    } else {
-      promiseDone(
-        slot.load()
-          .then(function() {
-            if (slot === _preloadingSlot.get()) {
-              _preloadingSlot.clear();
-              _playingSlot.set(slot);
-            }
-          })
-          // retry on load failure since the "preloadingSlot" singleton will automatically tries the next entries
-          // a valid slot may be available now
-          .catch(move));
+  function move(commandingSlot) {
+    if (_playingSlot.get() === commandingSlot) {
+      var slot = _preloadingSlot.get();
+      if (!slot) {
+        // can't preload anything but we still have to put the playing slot in the ending stage
+        _playingSlot.set(null);
+      } else {
+        promiseDone(
+          slot.load()
+            .then(function moveLoadFulfilled() {
+              if (slot === _preloadingSlot.get()) {
+                _preloadingSlot.clear();
+                _playingSlot.set(slot);
+              }
+            })
+            // retry on load failure since the "preloadingSlot" singleton will automatically tries the next entries
+            // a valid slot may be available now
+            .catch(function moveLoadRejected() {
+              move(commandingSlot)
+            }));
+      }
     }
   }
 
