@@ -2,6 +2,7 @@
 
 var playback = require('../../main/playback'),
   delay = require('lodash-node/modern/functions/delay'),
+  defer = require('lodash-node/modern/functions/defer'),
   identity = require('lodash-node/modern/utilities/identity'),
   defaults = require('lodash-node/modern/objects/defaults'),
   describe = jasmine.getEnv().describe,
@@ -103,13 +104,13 @@ describe('Mixtube Playback', function() {
 
     delay(function() {
       pb.pause();
-      pb.skip(_entries[1]);
 
       delay(function() {
         pb.skip(_entries[3]);
+        pb.play();
 
         delay(function() {
-          pb.play();
+          pb.skip(_entries[4]);
         }, ONE_SECOND);
       }, ONE_SECOND);
     }, ONE_SECOND);
