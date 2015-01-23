@@ -174,8 +174,6 @@ function sequencer(config) {
       nextVideo = _preloadingSlot.get().video;
     }
 
-    throw new TypeError();
-
     _config.comingNext(_playingSlot.get().video, nextVideo);
   }
 
