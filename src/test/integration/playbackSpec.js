@@ -21,6 +21,17 @@ describe('Mixtube Playback', function() {
           return {id: videoId, provider: 'youtube'};
         }));
 
+  function buildNextEntryProducer(entries) {
+    return function arrayBasedNextEntryProducer(entry) {
+      var idx = entries.indexOf(entry);
+      if (idx === -1 || idx + 1 === entries.length) {
+        return null;
+      }
+
+      return entries[idx + 1];
+    }
+  }
+
   function playbackWithDefaults(inter) {
     inter = inter || identity;
 
@@ -35,19 +46,16 @@ describe('Mixtube Playback', function() {
       },
       // special case where the entry is directly the video (easier for test)
       videoProducer: identity,
-      nextEntryProducer: function defaultNextEntryProducer(entry) {
-        var idx = _entries.indexOf(entry);
-        if (idx === -1 || idx + 1 === _entries.length) {
-          return null;
-        }
-
-        return _entries[idx + 1];
-      },
+      nextEntryProducer: buildNextEntryProducer(_entries),
       transitionDuration: defaultTransitionDuration,
       comingNext: function defaultComingNext(currentVideo, nextVideo) {
         console.group('comingNext called');
-        console.log('current %o', currentVideo);
-        console.log('next %o', nextVideo);
+        console.log({current: currentVideo, next: nextVideo});
+        console.groupEnd();
+      },
+      loadFailed: function logLoadingErrorWarning(entry, error) {
+        console.group('Skipped a entry because of an load error');
+        console.warn({entry: entry, error: error});
         console.groupEnd();
       },
       debug: {
@@ -115,6 +123,27 @@ describe('Mixtube Playback', function() {
       }, ONE_SECOND);
     }, ONE_SECOND);
 
+
+  }, ONE_HOUR);
+
+  it('skips over a video that failed to load', function(done) {
+
+    var entries = _entries.slice(0, 3);
+    entries[1].id = 'brokenVideoId';
+
+    var pb = playbackWithDefaults(function() {
+      return {
+        nextEntryProducer: buildNextEntryProducer(entries),
+        stateChanged: function(prevState, state) {
+          if (state === playback.States.stopped) {
+            done();
+          }
+        }
+      };
+    });
+
+    pb.skip(_entries[0]);
+    pb.play();
 
   }, ONE_HOUR);
 

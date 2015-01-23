@@ -211,7 +211,7 @@ function sequencer(config) {
             // retry on load failure since the "preloadingSlot" singleton will automatically tries the next entries
             // a valid slot may be available now
             .catch(function moveLoadRejected() {
-              move(commandingSlot)
+              move(commandingSlot);
             }));
       }
     }
