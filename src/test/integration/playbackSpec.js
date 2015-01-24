@@ -1,3 +1,5 @@
+/* global jasmine */
+
 'use strict';
 
 var playback = require('../../main/playback'),
@@ -5,10 +7,12 @@ var playback = require('../../main/playback'),
   defer = require('lodash-node/modern/functions/defer'),
   identity = require('lodash-node/modern/utilities/identity'),
   defaults = require('lodash-node/modern/objects/defaults'),
+  last = require('lodash-node/modern/arrays/last'),
   describe = jasmine.getEnv().describe,
   beforeEach = jasmine.getEnv().beforeEach,
   afterEach = jasmine.getEnv().afterEach,
   it = jasmine.getEnv().it,
+  expect = jasmine.getEnv().expect,
   ONE_HOUR = 1000 * 60 * 60,
   ONE_SECOND = 1000;
 
@@ -29,7 +33,7 @@ describe('Mixtube Playback', function() {
       }
 
       return entries[idx + 1];
-    }
+    };
   }
 
   function playbackWithDefaults(inter) {
@@ -48,16 +52,18 @@ describe('Mixtube Playback', function() {
       videoProducer: identity,
       nextEntryProducer: buildNextEntryProducer(_entries),
       transitionDuration: defaultTransitionDuration,
-      comingNext: function defaultComingNext(currentVideo, nextVideo) {
-        console.group('comingNext called');
-        console.log({current: currentVideo, next: nextVideo});
-        console.groupEnd();
-      },
-      loadFailed: function logLoadingErrorWarning(entry, error) {
-        console.group('Skipped a entry because of an load error');
-        console.warn({entry: entry, error: error});
-        console.groupEnd();
-      },
+      comingNext: jasmine.createSpy('comingNextSpy').and.callFake(
+        function defaultComingNext(currentVideo, nextVideo) {
+          console.group('comingNext called');
+          console.log({current: currentVideo, next: nextVideo});
+          console.groupEnd();
+        }),
+      loadFailed: jasmine.createSpy('loadFailedSpy').and.callFake(
+        function logLoadingErrorWarning(entry, error) {
+          console.group('Skipped a entry because of an load error');
+          console.warn({entry: entry, error: error});
+          console.groupEnd();
+        }),
       debug: {
         mediaDuration: (2 * defaultTransitionDuration + 2000) / 1000,
         mediaQuality: 'low'
@@ -80,32 +86,44 @@ describe('Mixtube Playback', function() {
 
   it('plays a playlist', function(done) {
 
-    var pb = playbackWithDefaults(function() {
-      return {
-        stateChanged: function(prevState, state) {
-          if (state === playback.States.stopped) {
-            done();
+    var comingNextSpy,
+      pb = playbackWithDefaults(function(defaultConfig) {
+        comingNextSpy = defaultConfig.comingNext;
+
+        return {
+          stateChanged: function(prevState, state) {
+            if (state === playback.States.stopped) {
+              runChecks();
+              done();
+            }
           }
-        }
-      };
-    });
+        };
+      });
 
     pb.skip(_entries[0]);
     pb.play();
 
+    function runChecks() {
+      expect(comingNextSpy.calls.count()).toEqual(_entries.length);
+    }
+
   }, ONE_HOUR);
 
-  it('plays the the last skipped to video when skip occurred while paused', function(done) {
+  it('plays the last skipped to video when skip occurred while paused', function(done) {
 
-    var pb = playbackWithDefaults(function() {
-      return {
-        stateChanged: function(prevState, state) {
-          if (state === playback.States.stopped) {
-            done();
+    var comingNextSpy,
+      pb = playbackWithDefaults(function(defaultConfig) {
+        comingNextSpy = defaultConfig.comingNext;
+
+        return {
+          stateChanged: function(prevState, state) {
+            if (state === playback.States.stopped) {
+              runChecks();
+              done();
+            }
           }
-        }
-      };
-    });
+        };
+      });
 
     pb.play();
     pb.skip(_entries[0]);
@@ -118,10 +136,14 @@ describe('Mixtube Playback', function() {
         pb.play();
 
         delay(function() {
-          pb.skip(_entries[4]);
+          pb.skip(last(_entries));
         }, ONE_SECOND);
       }, ONE_SECOND);
     }, ONE_SECOND);
+
+    function runChecks() {
+      expect(comingNextSpy.calls.mostRecent().args[0].id).toEqual(last(_entries).id);
+    }
 
 
   }, ONE_HOUR);
@@ -131,19 +153,28 @@ describe('Mixtube Playback', function() {
     var entries = _entries.slice(0, 3);
     entries[1].id = 'brokenVideoId';
 
-    var pb = playbackWithDefaults(function() {
-      return {
-        nextEntryProducer: buildNextEntryProducer(entries),
-        stateChanged: function(prevState, state) {
-          if (state === playback.States.stopped) {
-            done();
+    var loadFailedSpy,
+      pb = playbackWithDefaults(function(defaultConfig) {
+        loadFailedSpy = defaultConfig.loadFailed;
+
+        return {
+          nextEntryProducer: buildNextEntryProducer(entries),
+          stateChanged: function(prevState, state) {
+            if (state === playback.States.stopped) {
+              runChecks();
+              done();
+            }
           }
-        }
-      };
-    });
+        };
+      });
 
     pb.skip(_entries[0]);
     pb.play();
+
+    function runChecks() {
+      expect(loadFailedSpy).toHaveBeenCalled();
+      expect(loadFailedSpy.calls.count()).toEqual(1);
+    }
 
   }, ONE_HOUR);
 
