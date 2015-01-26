@@ -31,6 +31,8 @@ var sequencer = require('./sequencer'),
  * @property {number} transitionDuration
  * @property {?function(Video, ?Video)} comingNext
  * @property {?function(PlaybackState, PlaybackState)} stateChanged
+ * @property {?function(Entry, boolean)}  loadingChanged called each time an entry started or stopped to load
+ *                                        following an user action (does not include preloading)
  * @property {?function(Entry, ?Error)} loadFailed
  * @property {?playbackDebug} debug
  */
@@ -50,6 +52,7 @@ function playback(config) {
   var _config = defaults({}, config, {
       comingNext: noop,
       stateChanged: noop,
+      loadingChanged: noop,
       loadFailed: noop,
       debug: {
         mediaDuration: -1,
@@ -99,6 +102,7 @@ function playback(config) {
     playbackSlotProducer: playbackSlotProducer,
     comingNext: _config.comingNext,
     stateChanged: _config.stateChanged,
+    loadingChanged: _config.loadingChanged,
     loadFailed: _config.loadFailed
   });
 

@@ -1,3 +1,5 @@
+/* globals jasmine */
+
 'use strict';
 
 /**
@@ -19,7 +21,7 @@ function playbackSlotMock(props) {
      * @return {Entry}
      */
     get entry() {
-      return props.entry
+      return props.entry;
     },
     /**
      * @returns {Video}

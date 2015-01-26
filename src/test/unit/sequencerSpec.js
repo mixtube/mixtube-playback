@@ -1,8 +1,14 @@
+/* globals jasmine */
+
 'use strict';
 
 var sequencer = require('../../main/sequencer'),
   playbackSlotMock = require('./playbackSlotMock'),
   defer = require('./defer'),
+  describe = jasmine.getEnv().describe,
+  beforeEach = jasmine.getEnv().beforeEach,
+  it = jasmine.getEnv().it,
+  expect = jasmine.getEnv().expect,
   defaults = require('lodash-node/modern/objects/defaults'),
   after = require('lodash-node/modern/functions/after'),
   times = require('lodash-node/modern/utilities/times'),
@@ -36,6 +42,7 @@ describe('A sequencer', function() {
       },
       comingNext: jasmine.createSpy('comingNextSpy'),
       stateChanged: jasmine.createSpy('stateChangedSpy'),
+      loadingChanged: jasmine.createSpy('loadingChangedSpy'),
       loadFailed: jasmine.createSpy('loadFailedSpy')
     };
     return sequencer(defaults({}, inter(defaultConfig), defaultConfig));
@@ -48,10 +55,7 @@ describe('A sequencer', function() {
     _entries = times(5, function(idx) {
       var id = 'mockEntry' + idx;
       return {
-        id: id,
-        toString: function() {
-          return id;
-        }
+        id: id
       };
     });
 
@@ -72,7 +76,7 @@ describe('A sequencer', function() {
     var seq = sequencerWithDefaults(function() {
       return {
         nextEntryProducer: nextEntryProducerSpy
-      }
+      };
     });
 
     seq.play();
@@ -99,7 +103,7 @@ describe('A sequencer', function() {
             finishGate();
             return seqDefaultCfg.playbackSlotProducer(producerCfg);
           })
-      }
+      };
     });
 
     var expectedSlotProducerCallsCount = 4,
@@ -164,7 +168,7 @@ describe('A sequencer', function() {
 
           return slot;
         }
-      }
+      };
     });
 
     var finishGate = after(_entries.length, function() {
@@ -190,7 +194,7 @@ describe('A sequencer', function() {
           slots.push(slot);
           return slot;
         }
-      }
+      };
     });
 
     seq.play();
@@ -236,7 +240,7 @@ describe('A sequencer', function() {
 
             return slot;
           }
-        }
+        };
       });
 
     seq.skip(_entries[0]);
@@ -275,7 +279,7 @@ describe('A sequencer', function() {
 
             return slot;
           }
-        }
+        };
       });
 
     seq.play();
@@ -308,7 +312,7 @@ describe('A sequencer', function() {
         loadFailedSpy = seqDefaultCfg.loadFailed;
 
         seqDefaultCfg.stateChanged.and.callFake(function(prevState, newState) {
-          if(newState === sequencer.States.stopped) {
+          if (newState === sequencer.States.stopped) {
             runChecks();
           }
         });
@@ -354,7 +358,7 @@ describe('A sequencer', function() {
             }
             return slot;
           }
-        }
+        };
       });
 
     seq.play();
@@ -374,7 +378,7 @@ describe('A sequencer', function() {
           nextEntryProducer: _nextEntryProducer,
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
-            if (slot.entry == _entries[0]) {
+            if (slot.entry === _entries[0]) {
               slot.start.and.callFake(function() {
                 defer(producerCfg.ending);
               });
@@ -389,7 +393,7 @@ describe('A sequencer', function() {
             }
             return slot;
           }
-        }
+        };
       });
 
     seq.play();
@@ -436,7 +440,7 @@ describe('A sequencer', function() {
           nextEntryProducer: _nextEntryProducer,
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
-            if (slot.entry == _entries[0]) {
+            if (slot.entry === _entries[0]) {
               slot.start.and.callFake(function() {
                 defer(producerCfg.ending);
               });
@@ -447,7 +451,7 @@ describe('A sequencer', function() {
             return slot;
           },
           stateChanged: seqDefaultCfg.stateChanged.and.callFake(runChecksAfter2)
-        }
+        };
       });
 
     seq.play();
@@ -455,6 +459,45 @@ describe('A sequencer', function() {
 
     function runChecks() {
       expect(stateChangedSpy.calls.argsFor(1)).toEqual([sequencer.States.playing, sequencer.States.stopped]);
+      done();
+    }
+  });
+
+  it('calls loadingChanged on skip when en entry starts, stops and fails to load', function(done) {
+    var loadingChangedSpy,
+
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+        var expectedLoadingChangedCallsCount = 4,
+          runChecksAfter4 = after(expectedLoadingChangedCallsCount, runChecks);
+
+        loadingChangedSpy = seqDefaultCfg.loadingChanged;
+
+        return {
+          nextEntryProducer: _nextEntryProducer,
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+            if (slot.entry === _entries[1]) {
+              slot.load.and.returnValue(Promise.reject());
+            }
+            return slot;
+          },
+          loadingChanged: seqDefaultCfg.loadingChanged.and.callFake(runChecksAfter4)
+        };
+      });
+
+    seq.play();
+    seq.skip(_entries[0]);
+    defer(function() {
+      seq.skip(_entries[1]);
+    });
+
+    function runChecks() {
+      expect(loadingChangedSpy.calls.allArgs()).toEqual([
+        [{id: 'mockEntry0'}, true],
+        [{id: 'mockEntry0'}, false],
+        [{id: 'mockEntry1'}, true],
+        [{id: 'mockEntry1'}, false]
+      ]);
       done();
     }
   });

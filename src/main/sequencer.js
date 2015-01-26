@@ -36,6 +36,7 @@ var States = enumeration(['pristine', 'playing', 'paused', 'stopped']);
  * @property {function(Video, ?Video)} comingNext
  * @property {function({entry: Entry, endingSoon: function, ending: function}):PlaybackSlot} playbackSlotProducer
  * @property {function(SequencerState, SequencerState)} stateChanged
+ * @property {function(Entry, boolean)} loadingChanged
  * @property {function(Entry, ?Error)} loadFailed
  */
 
@@ -124,7 +125,7 @@ function sequencer(config) {
   function forEachSlot(callback) {
     [_preloadingSlot, _skippingSlot, _playingSlot]
       .forEach(function(singleton) {
-        if (singleton.get()) callback(singleton.get())
+        if (singleton.get()) callback(singleton.get());
       });
 
     _endingSlots.forEach(callback);
@@ -169,7 +170,7 @@ function sequencer(config) {
   function notifyComingNext() {
     var nextVideo = null;
     if (_skippingSlot.get()) {
-      nextVideo = _skippingSlot.get().video
+      nextVideo = _skippingSlot.get().video;
     } else if (_preloadingSlot.get()) {
       nextVideo = _preloadingSlot.get().video;
     }
@@ -225,8 +226,11 @@ function sequencer(config) {
     var slot = newPlaybackSlot(entry);
     _skippingSlot.set(slot);
 
-    return slot.load()
+    var loadPromise = slot.load()
       .then(function skipLoadFulfilled() {
+
+        _config.loadingChanged(entry, false);
+
         if (slot === _skippingSlot.get()) {
           // clear only because we don't want to discard the skipping slot
           // we are going to transfer it to the playing state
@@ -238,6 +242,7 @@ function sequencer(config) {
       })
       .catch(function skipLoadRejected(error) {
 
+        _config.loadingChanged(entry, false);
         _config.loadFailed(slot.entry, error);
 
         if (slot === _skippingSlot.get()) {
@@ -251,6 +256,10 @@ function sequencer(config) {
           }
         }
       });
+
+    _config.loadingChanged(entry, true);
+
+    return loadPromise;
   }
 
   /**
