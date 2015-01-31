@@ -2,8 +2,8 @@
 
 var animationGroup = require('./animationGroup'),
   animationFade = require('./animationFade'),
-  isNumber = require('lodash-node/modern/objects/isNumber'),
-  has = require('lodash-node/modern/objects/has'),
+  isNumber = require('lodash/lang/isNumber'),
+  has = require('lodash/object/has'),
   EventEmitter = require('events').EventEmitter;
 
 var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve, reject) {

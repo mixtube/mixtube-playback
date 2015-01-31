@@ -4,8 +4,8 @@ var sequencer = require('./sequencer'),
   playbackSlot = require('./playbackSlot'),
   playersPool = require('./playersPool'),
   playerFactory = require('./playerFactory'),
-  defaults = require('lodash-node/modern/objects/defaults'),
-  noop = require('lodash-node/modern/utilities/noop');
+  defaults = require('lodash/object/defaults'),
+  noop = require('lodash/utility/noop');
 
 /**
  * @typedef {Object} Video

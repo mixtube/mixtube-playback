@@ -3,11 +3,11 @@
 'use strict';
 
 var playback = require('../../main/playback'),
-  delay = require('lodash-node/modern/functions/delay'),
-  defer = require('lodash-node/modern/functions/defer'),
-  identity = require('lodash-node/modern/utilities/identity'),
-  defaults = require('lodash-node/modern/objects/defaults'),
-  last = require('lodash-node/modern/arrays/last'),
+  delay = require('lodash/function/delay'),
+  defer = require('lodash/function/defer'),
+  identity = require('lodash/utility/identity'),
+  defaults = require('lodash/object/defaults'),
+  last = require('lodash/array/last'),
   describe = jasmine.getEnv().describe,
   beforeEach = jasmine.getEnv().beforeEach,
   afterEach = jasmine.getEnv().afterEach,

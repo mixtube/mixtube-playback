@@ -5,9 +5,9 @@ var playersPool = require('../../main/playersPool'),
   playerFactoryMock = require('./playerFactoryMock'),
   playersPoolMock = require('./playersPoolMock'),
   defer = require('./defer'),
-  defaults = require('lodash-node/modern/objects/defaults'),
-  constant = require('lodash-node/modern/utilities/constant'),
-  identity = require('lodash-node/modern/utilities/identity');
+  defaults = require('lodash/object/defaults'),
+  constant = require('lodash/utility/constant'),
+  identity = require('lodash/utility/identity');
 
 function always(promise, cb) {
   promise.then(cb, function(err) {

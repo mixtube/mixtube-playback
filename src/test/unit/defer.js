@@ -3,8 +3,10 @@
  * Build: `lodash modularize modern exports="node" -o ./modern/`
  * Copyright 2012-2013 The Dojo Foundation <http://dojofoundation.org/>
  */
-var isFunction = require('lodash-node/modern/objects/isFunction'),
-  slice = require('lodash-node/modern/internals/slice');
+'use strict';
+
+var isFunction = require('lodash/lang/isFunction'),
+  slice = require('lodash/array/slice');
 
 /**
  * Defers executing the `func` function until the current call stack has cleared.
@@ -22,7 +24,7 @@ var isFunction = require('lodash-node/modern/objects/isFunction'),
  */
 function defer(func) {
   if (!isFunction(func)) {
-    throw new TypeError;
+    throw new TypeError();
   }
   var args = slice(arguments, 1);
   Promise.resolve().then(function() { func.apply(undefined, args); });

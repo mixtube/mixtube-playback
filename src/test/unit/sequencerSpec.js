@@ -9,13 +9,13 @@ var sequencer = require('../../main/sequencer'),
   beforeEach = jasmine.getEnv().beforeEach,
   it = jasmine.getEnv().it,
   expect = jasmine.getEnv().expect,
-  defaults = require('lodash-node/modern/objects/defaults'),
-  after = require('lodash-node/modern/functions/after'),
-  times = require('lodash-node/modern/utilities/times'),
-  identity = require('lodash-node/modern/utilities/identity'),
-  last = require('lodash-node/modern/arrays/last'),
-  initial = require('lodash-node/modern/arrays/initial'),
-  contains = require('lodash-node/modern/collections/contains');
+  defaults = require('lodash/object/defaults'),
+  after = require('lodash/function/after'),
+  times = require('lodash/utility/times'),
+  identity = require('lodash/utility/identity'),
+  last = require('lodash/array/last'),
+  initial = require('lodash/array/initial'),
+  contains = require('lodash/collection/contains');
 
 
 describe('A sequencer', function() {

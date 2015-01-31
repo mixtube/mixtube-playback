@@ -1,7 +1,7 @@
 'use strict';
 
 var playerYoutube = require('./playerYoutube'),
-  has = require('lodash-node/modern/objects/has');
+  has = require('lodash/object/has');
 
 /**
  * @typedef {Object} Player

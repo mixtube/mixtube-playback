@@ -3,7 +3,7 @@
 var enumeration = require('./enumeration'),
   barrier = require('./barrier'),
   promiseDone = require('./promiseDone'),
-  once = require('lodash-node/modern/functions/once');
+  once = require('lodash/function/once');
 
 /**
  * @typedef {Object} PlaybackSlotStates

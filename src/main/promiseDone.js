@@ -1,6 +1,6 @@
 'use strict';
 
-var defer = require('lodash-node/modern/functions/defer');
+var defer = require('lodash/function/defer');
 
 /**
  * Makes sure no exception is made silent.

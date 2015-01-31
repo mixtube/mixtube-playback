@@ -1,7 +1,7 @@
 'use strict';
 
-var find = require('lodash-node/modern/collections/find'),
-  has = require('lodash-node/modern/objects/has');
+var find = require('lodash/collection/find'),
+  has = require('lodash/object/has');
 
 /**
  * @param {{playerFactory: PlayerFactory}} config

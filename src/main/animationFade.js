@@ -1,7 +1,7 @@
 'use strict';
 
 var Tweenable = require('shifty');
-var noop = require('lodash-node/modern/utilities/noop');
+var noop = require('lodash/utility/noop');
 
 /**
  * @param {{schedule: string, duration: number, step: function(number), from: number, to: number}} config
