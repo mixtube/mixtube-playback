@@ -39,15 +39,15 @@ gulp.task('watch', function() {
 
   installWatchify(
     './src/test/unit/playerSpec.js',
-    './dist/test/unit/playerSpec.bundle.js');
+    './build/test/unit/playerSpec.bundle.js');
 
   installWatchify(
     './src/test/unit/sequencerSpec.js',
-    './dist/test/unit/sequencerSpec.bundle.js');
+    './build/test/unit/sequencerSpec.bundle.js');
 
   installWatchify(
     './src/test/integration/playbackSpec.js',
-    './dist/test/integration/playbackSpec.bundle.js');
+    './build/test/integration/playbackSpec.bundle.js');
 
   gulp.src(['src/main/**/*.js', 'src/test/**/*.js'])
     .pipe(watch(['src/main/**/*.js', 'src/test/**/*.js']))
@@ -56,7 +56,7 @@ gulp.task('watch', function() {
 });
 
 gulp.task('serve', ['watch'], function() {
-  var baseDirs = ['src/test/integration/web', 'dist/test/integration'];
+  var baseDirs = ['src/test/integration/web', 'build/test/integration'];
 
   browserSync({
     open: false,
