@@ -70,6 +70,15 @@ function playerYoutube(config) {
         {
           height: '100%',
           width: '100%',
+          playerVars: {
+            controls: 0,
+            disablekb: 1,
+            iv_load_policy: 3,
+            modestbranding: 1,
+            origin: location.hostname,
+            rel: 0,
+            showinfo: 0
+          },
           events: {
             onReady: function() {
               resolve(player);
