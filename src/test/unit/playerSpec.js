@@ -1,3 +1,5 @@
+/* globals jasmine */
+
 'use strict';
 
 var playersPool = require('../../main/playersPool'),
@@ -7,13 +9,19 @@ var playersPool = require('../../main/playersPool'),
   defer = require('./defer'),
   defaults = require('lodash/object/defaults'),
   constant = require('lodash/utility/constant'),
-  identity = require('lodash/utility/identity');
+  identity = require('lodash/utility/identity'),
+
+  describe = jasmine.getEnv().describe,
+  beforeEach = jasmine.getEnv().beforeEach,
+  afterEach = jasmine.getEnv().afterEach,
+  it = jasmine.getEnv().it,
+  expect = jasmine.getEnv().expect;
 
 function always(promise, cb) {
   promise.then(cb, function(err) {
     cb();
     return Promise.reject(err);
-  })
+  });
 }
 
 describe('A player pool', function() {
@@ -121,7 +129,7 @@ describe('A player slot', function() {
         playersPool: pool,
         entry: entryMock,
         videoProducer: videoProducerSpy
-      }
+      };
     });
 
     slot.load();
@@ -159,7 +167,7 @@ describe('A player slot', function() {
       return {
         playersPool: pool,
         transitionDuration: transitionDuration
-      }
+      };
     });
 
     slot.load().then(function() {
@@ -188,7 +196,7 @@ describe('A player slot', function() {
       slot = playbackSlotWithDefaults(function() {
         return {
           playersPool: pool
-        }
+        };
       });
 
     slot.suspend();
@@ -216,7 +224,7 @@ describe('A player slot', function() {
       slot = playbackSlotWithDefaults(function() {
         return {
           playersPool: pool
-        }
+        };
       });
 
     slot.load().then(function() {

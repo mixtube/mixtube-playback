@@ -61,13 +61,13 @@ function playbackSlot(config) {
       sandBoxedExecute(_config.cues.endingSoon.callback);
     }),
     callEndingOnce = once(function() {
-      sandBoxedExecute(_config.cues.ending.callback)
+      sandBoxedExecute(_config.cues.ending.callback);
     });
 
   function checkState(requiredState, method) {
     if (_state !== requiredState) {
-      throw new Error('The slot "' + method + '" method should be called only when in ' + requiredState
-      + ' state (current is ' + _state + ')');
+      throw new Error('The slot "' + method + '" method should be called only when in ' + requiredState +
+      ' state (current is ' + _state + ')');
     }
   }
 
@@ -241,7 +241,7 @@ function playbackSlot(config) {
 
     return function stopCuesHandler() {
       clearInterval(intervalId);
-    }
+    };
   }
 
   /**
@@ -253,7 +253,7 @@ function playbackSlot(config) {
      * @return {Entry}
      */
     get entry() {
-      return _config.entry
+      return _config.entry;
     },
     /**
      * @returns {Video}

@@ -6,7 +6,9 @@ var path = require('path'),
   source = require('vinyl-source-stream'),
   watchify = require('watchify'),
   browserify = require('browserify'),
-  browserSync = require('browser-sync');
+  browserSync = require('browser-sync'),
+  watch = require('gulp-watch'),
+  jshint = require('gulp-jshint');
 
 function installWatchify(src, dest) {
   var bundler = watchify(
@@ -46,6 +48,11 @@ gulp.task('watch', function() {
   installWatchify(
     './src/test/integration/playbackSpec.js',
     './dist/test/integration/playbackSpec.bundle.js');
+
+  gulp.src(['src/main/**/*.js', 'src/test/**/*.js'])
+    .pipe(watch(['src/main/**/*.js', 'src/test/**/*.js']))
+    .pipe(jshint())
+    .pipe(jshint.reporter('jshint-stylish'));
 });
 
 gulp.task('serve', ['watch'], function() {
@@ -59,7 +66,7 @@ gulp.task('serve', ['watch'], function() {
   });
 
   gulp.watch(baseDirs.map(function(baseDir) {
-    return baseDir + '/**/*'
+    return baseDir + '/**/*';
   }), browserSync.reload);
 
 });

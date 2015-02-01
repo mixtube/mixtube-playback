@@ -1,3 +1,5 @@
+/* globals YT */
+
 'use strict';
 
 var animationGroup = require('./animationGroup'),
@@ -51,7 +53,7 @@ function playerYoutube(config) {
 
   // we have to use an external event mechanism since the YT API doesn't provide a working removeEventListener
   // see https://code.google.com/p/gdata-issues/issues/detail?id=6700
-  var _emitter = new EventEmitter;
+  var _emitter = new EventEmitter();
 
   function newYtPlayer() {
     return new Promise(function(resolve) {
@@ -179,7 +181,7 @@ function playerYoutube(config) {
 
       ytPlayer.loadVideoById(id);
       ytPlayer.setPlaybackQuality(_playbackQuality);
-    }
+    };
   }
 
   function load(ytPlayer, id) {
