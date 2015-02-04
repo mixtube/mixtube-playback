@@ -1,6 +1,6 @@
 {
   "name": "mixtube-playback",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.3",
   "main": "./src/main/playback",
   "dependencies": {
     "lodash": "^3.0.1",
