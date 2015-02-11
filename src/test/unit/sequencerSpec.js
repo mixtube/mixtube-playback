@@ -43,6 +43,7 @@ describe('A sequencer', function() {
       comingNext: jasmine.createSpy('comingNextSpy'),
       stateChanged: jasmine.createSpy('stateChangedSpy'),
       loadingChanged: jasmine.createSpy('loadingChangedSpy'),
+      playingChanged: jasmine.createSpy('playingChangedSpy'),
       loadFailed: jasmine.createSpy('loadFailedSpy')
     };
     return sequencer(defaults({}, inter(defaultConfig), defaultConfig));
@@ -167,6 +168,7 @@ describe('A sequencer', function() {
               });
             });
 
+
             return slot;
           }
         };
@@ -256,7 +258,7 @@ describe('A sequencer', function() {
     });
 
     function runChecks() {
-      expect(comingNextSpy).toHaveBeenCalledWith(_entries[0].video, _entries[1].video);
+      expect(comingNextSpy).toHaveBeenCalledWith(_entries[0], _entries[1]);
 
       done();
     }
@@ -495,6 +497,31 @@ describe('A sequencer', function() {
 
     function runChecks() {
       expect(stateChangedSpy.calls.argsFor(1)).toEqual([sequencer.States.playing, sequencer.States.stopped]);
+      done();
+    }
+  });
+
+  it('calls playingChanged when en entry starts', function(done) {
+    var playingChangedSpy,
+
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+        var expectedPlayingChangedCallsCount = 2,
+          runChecksAfter = after(expectedPlayingChangedCallsCount, runChecks);
+
+        playingChangedSpy = seqDefaultCfg.playingChanged.and.callFake(runChecksAfter);
+      });
+
+    seq.play();
+    seq.skip(_entries[0]);
+    defer(function() {
+      seq.skip(_entries[1]);
+    });
+
+    function runChecks() {
+      expect(playingChangedSpy.calls.allArgs()).toEqual([
+        [_entries[0]],
+        [_entries[1]]
+      ]);
       done();
     }
   });

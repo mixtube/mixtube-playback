@@ -33,9 +33,10 @@ var States = enumeration(['pristine', 'playing', 'paused', 'stopped']);
  * @name sequencerConfig
  * @typedef {Object} sequencerConfig
  * @property {function(?Entry):Entry} nextEntryProducer
- * @property {function(Video, ?Video)} comingNext
+ * @property {function(Entry, ?Entry)} comingNext
  * @property {function({entry: Entry, endingSoon: function, ending: function}):PlaybackSlot} playbackSlotProducer
  * @property {function(SequencerState, SequencerState)} stateChanged
+ * @property {function(Entry)} playingChanged
  * @property {function(Entry, boolean)} loadingChanged
  * @property {function(Entry, ?Error)} loadFailed
  */
@@ -112,6 +113,7 @@ function sequencer(config) {
       changedListener: function(prevSlot, slot) {
         if (slot) {
           slot.start();
+          _config.playingChanged(slot.entry);
           var nextEntry = _config.nextEntryProducer(slot.entry);
           if (nextEntry) {
             preload(nextEntry);
@@ -166,14 +168,14 @@ function sequencer(config) {
   }
 
   function notifyComingNext() {
-    var nextVideo = null;
+    var nextEntry = null;
     if (_skippingSlot.get()) {
-      nextVideo = _skippingSlot.get().video;
+      nextEntry = _skippingSlot.get().entry;
     } else if (_preloadingSlot.get()) {
-      nextVideo = _preloadingSlot.get().video;
+      nextEntry = _preloadingSlot.get().entry;
     }
 
-    _config.comingNext(_playingSlot.get().video, nextVideo);
+    _config.comingNext(_playingSlot.get().entry, nextEntry);
   }
 
   /**
