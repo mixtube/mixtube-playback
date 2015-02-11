@@ -270,7 +270,7 @@ describe('A sequencer', function() {
             slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
 
             slot.load.and.callFake(function() {
-              defer(finish);
+              defer(runChecks);
               return Promise.resolve();
             });
 
@@ -286,7 +286,7 @@ describe('A sequencer', function() {
 
     seq.play();
 
-    function finish() {
+    function runChecks() {
 
       expect(slot.proceed).toHaveBeenCalled();
 
