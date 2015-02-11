@@ -34,7 +34,7 @@ describe('A sequencer', function() {
       playbackSlotProducer: function(config) {
         var slot = playbackSlotMock({
           entry: config.entry,
-          video: {provider: 'mock', id: 'video-' + config.entry}
+          video: config.entry.video
         });
         slot.load.and.returnValue(Promise.resolve());
         slot.end.and.returnValue(Promise.resolve());
@@ -55,7 +55,8 @@ describe('A sequencer', function() {
     _entries = times(5, function(idx) {
       var id = 'mockEntry' + idx;
       return {
-        id: id
+        id: id,
+        video: {provider: 'mock', id: 'video-' + id}
       };
     });
 
@@ -145,31 +146,31 @@ describe('A sequencer', function() {
 
   it('schedules the preloaded entry properly so that it gets played on automated ending', function(done) {
 
-    var comingNextSpy;
-    var seq = sequencerWithDefaults(function(seqDefaultCfg) {
+    var comingNextSpy,
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
 
-      comingNextSpy = seqDefaultCfg.comingNext;
+        comingNextSpy = seqDefaultCfg.comingNext;
 
-      return {
-        nextEntryProducer: _nextEntryProducer,
-        playbackSlotProducer: function(producerCfg) {
-          var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+        return {
+          nextEntryProducer: _nextEntryProducer,
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
 
-          // fake auto ending
-          slot.start.and.callFake(function() {
-            defer(function() {
-              producerCfg.endingSoon();
+            // fake auto ending
+            slot.start.and.callFake(function() {
               defer(function() {
-                producerCfg.ending();
-                finishGate();
+                producerCfg.endingSoon();
+                defer(function() {
+                  producerCfg.ending();
+                  finishGate();
+                });
               });
             });
-          });
 
-          return slot;
-        }
-      };
-    });
+            return slot;
+          }
+        };
+      });
 
     var finishGate = after(_entries.length, function() {
 
@@ -224,6 +225,41 @@ describe('A sequencer', function() {
 
         done();
       });
+  });
+
+  it('calls comingNext properly when skip is called', function(done) {
+    var comingNextSpy,
+
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+        comingNextSpy = seqDefaultCfg.comingNext.and.callFake(function() {
+          defer(runChecks);
+        });
+
+        return {
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+            slot.end.and.callFake(function() {
+              defer(function() {
+                producerCfg.endingSoon();
+              });
+            });
+            return slot;
+          }
+        };
+      });
+
+    seq.skip(_entries[0]);
+    seq.play();
+
+    defer(function() {
+      seq.skip(_entries[1]);
+    });
+
+    function runChecks() {
+      expect(comingNextSpy).toHaveBeenCalledWith(_entries[0].video, _entries[1].video);
+
+      done();
+    }
   });
 
   it('pauses and resumes properly', function(done) {
@@ -493,10 +529,10 @@ describe('A sequencer', function() {
 
     function runChecks() {
       expect(loadingChangedSpy.calls.allArgs()).toEqual([
-        [{id: 'mockEntry0'}, true],
-        [{id: 'mockEntry0'}, false],
-        [{id: 'mockEntry1'}, true],
-        [{id: 'mockEntry1'}, false]
+        [_entries[0], true],
+        [_entries[0], false],
+        [_entries[1], true],
+        [_entries[1], false]
       ]);
       done();
     }
