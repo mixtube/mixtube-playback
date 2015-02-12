@@ -49,6 +49,8 @@ function sequencer(config) {
 
   var _config = config,
 
+    _entriesSnapshot,
+
     _state = singleton({
       init: States.pristine,
       changedListener: function(prevState, state) {
@@ -169,15 +171,21 @@ function sequencer(config) {
     return slot;
   }
 
-  function notifyComingNext() {
-    var nextEntry = null;
-    if (_skippingSlot.get()) {
-      nextEntry = _skippingSlot.get().entry;
-    } else if (_preloadingSlot.get()) {
-      nextEntry = _preloadingSlot.get().entry;
-    }
+  /**
+   * Takes a snapshot that will be used by coming next to display the relevant info
+   *
+   * @param {PlaybackSlot} currentSlot
+   * @param {PlaybackSlot} nextSlot
+   */
+  function takeEntriesSnapshot(currentSlot, nextSlot) {
+    _entriesSnapshot = {
+      currentEntry: currentSlot ? currentSlot.entry : null,
+      nextEntry: nextSlot ? nextSlot.entry : null
+    };
+  }
 
-    _config.comingNext(_playingSlot.get().entry, nextEntry);
+  function notifyComingNext() {
+    _config.comingNext(_entriesSnapshot.currentEntry, _entriesSnapshot.nextEntry);
   }
 
   /**
@@ -207,6 +215,7 @@ function sequencer(config) {
           slot.load()
             .then(function moveLoadFulfilled() {
               if (slot === _preloadingSlot.get()) {
+                takeEntriesSnapshot(_playingSlot.get(), slot);
                 _preloadingSlot.clear();
                 _playingSlot.set(slot);
               }
@@ -234,6 +243,8 @@ function sequencer(config) {
         _config.loadingChanged(entry, false);
 
         if (slot === _skippingSlot.get()) {
+          takeEntriesSnapshot(_playingSlot.get(), slot);
+          
           // clear only because we don't want to discard the skipping slot
           // we are going to transfer it to the playing state
           _skippingSlot.clear();

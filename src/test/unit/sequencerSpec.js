@@ -231,19 +231,28 @@ describe('A sequencer', function() {
 
   it('calls comingNext properly when skip is called', function(done) {
     var comingNextSpy,
+      aft = after(1, function() {
+        runChecks();
+        done();
+      }),
 
       seq = sequencerWithDefaults(function(seqDefaultCfg) {
         comingNextSpy = seqDefaultCfg.comingNext.and.callFake(function() {
-          defer(runChecks);
+          aft();
         });
 
         return {
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             slot.end.and.callFake(function() {
+              // doubled defer to simulate how actual implementation behaves
               defer(function() {
-                producerCfg.endingSoon();
+                defer(function() {
+                  producerCfg.endingSoon();
+                });
               });
+
+              return Promise.resolve();
             });
             return slot;
           }
@@ -259,8 +268,6 @@ describe('A sequencer', function() {
 
     function runChecks() {
       expect(comingNextSpy).toHaveBeenCalledWith(_entries[0], _entries[1]);
-
-      done();
     }
   });
 
