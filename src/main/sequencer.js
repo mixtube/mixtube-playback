@@ -49,8 +49,6 @@ function sequencer(config) {
 
   var _config = config,
 
-    _entriesSnapshot,
-
     _state = singleton({
       init: States.pristine,
       changedListener: function(prevState, state) {
@@ -156,7 +154,14 @@ function sequencer(config) {
   function newPlaybackSlot(entry) {
     var slot = _config.playbackSlotProducer({
       entry: entry,
-      endingSoon: notifyComingNext,
+      endingSoon: function endingSoonComingNext() {
+        var nextEntry = null;
+        if (_preloadingSlot.get()) {
+          nextEntry = _preloadingSlot.get().entry;
+        }
+
+        _config.comingNext(_playingSlot.get().entry, nextEntry);
+      },
       ending: function newSlotEnding() {
         move(slot);
       }
@@ -169,23 +174,6 @@ function sequencer(config) {
     }
 
     return slot;
-  }
-
-  /**
-   * Takes a snapshot that will be used by coming next to display the relevant info
-   *
-   * @param {PlaybackSlot} currentSlot
-   * @param {PlaybackSlot} nextSlot
-   */
-  function takeEntriesSnapshot(currentSlot, nextSlot) {
-    _entriesSnapshot = {
-      currentEntry: currentSlot ? currentSlot.entry : null,
-      nextEntry: nextSlot ? nextSlot.entry : null
-    };
-  }
-
-  function notifyComingNext() {
-    _config.comingNext(_entriesSnapshot.currentEntry, _entriesSnapshot.nextEntry);
   }
 
   /**
@@ -215,7 +203,6 @@ function sequencer(config) {
           slot.load()
             .then(function moveLoadFulfilled() {
               if (slot === _preloadingSlot.get()) {
-                takeEntriesSnapshot(_playingSlot.get(), slot);
                 _preloadingSlot.clear();
                 _playingSlot.set(slot);
               }
@@ -243,11 +230,14 @@ function sequencer(config) {
         _config.loadingChanged(entry, false);
 
         if (slot === _skippingSlot.get()) {
-          takeEntriesSnapshot(_playingSlot.get(), slot);
-          
+          // since since endingSoon will not be executed in case of prematured end
+          // we need to manually trigger it
+          _config.comingNext(_playingSlot.get() ? _playingSlot.get().entry : null, slot.entry);
+
           // clear only because we don't want to discard the skipping slot
           // we are going to transfer it to the playing state
           _skippingSlot.clear();
+
           // preloaded slot became irrelevant because of skipping
           _preloadingSlot.set(null);
           _playingSlot.set(slot);
