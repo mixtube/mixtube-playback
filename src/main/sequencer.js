@@ -111,6 +111,8 @@ function sequencer(config) {
 
     _playingSlot = singleton({
       changedListener: function(prevSlot, slot) {
+        if (prevSlot) _endingSlots.add(prevSlot);
+
         if (slot) {
           slot.start();
           _config.playingChanged(slot.entry);
@@ -199,14 +201,13 @@ function sequencer(config) {
       var slot = _preloadingSlot.get();
       if (!slot) {
         // can't preload anything but we still have to put the playing slot in the ending stage
-        _endingSlots.add(_playingSlot.clear());
+        _playingSlot.set(null);
       } else {
         promiseDone(
           slot.load()
             .then(function moveLoadFulfilled() {
               if (slot === _preloadingSlot.get()) {
                 _preloadingSlot.clear();
-                _endingSlots.add(_playingSlot.get());
                 _playingSlot.set(slot);
               }
             })
@@ -233,10 +234,6 @@ function sequencer(config) {
         _config.loadingChanged(entry, false);
 
         if (slot === _skippingSlot.get()) {
-          // do this first so that comingNext will get a nice "snapshot" of the sequencer state
-          // after it will be to late since we will have started to shuffle slots around
-          _endingSlots.add(_playingSlot.get());
-
           // clear only because we don't want to discard the skipping slot
           // we are going to transfer it to the playing state
           _skippingSlot.clear();
