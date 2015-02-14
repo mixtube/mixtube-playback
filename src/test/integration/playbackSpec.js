@@ -104,7 +104,7 @@ describe('Mixtube Playback', function() {
     pb.play();
 
     function runChecks() {
-      expect(comingNextSpy.calls.count()).toEqual(_entries.length);
+      expect(comingNextSpy.calls.count()).toEqual(_entries.length + 1);
     }
 
   }, ONE_HOUR);
