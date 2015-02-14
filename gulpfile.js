@@ -22,32 +22,31 @@ function installWatchify(src, dest) {
 
   bundler.on('update', function() {
     gutil.log('Bundle "' + src + '" updated');
-    rebundle();
+    reBundle();
   });
 
-  function rebundle() {
+  function reBundle() {
     return bundler.bundle()
       .on('error', gutil.log.bind(gutil, 'Browserify Error'))
       .pipe(source(path.basename(dest)))
       .pipe(gulp.dest(path.dirname(dest)));
   }
 
-  return rebundle();
+  return reBundle();
 }
 
 gulp.task('watch', function() {
 
-  installWatchify(
-    './src/test/unit/playerSpec.js',
-    './build/test/unit/playerSpec.bundle.js');
-
-  installWatchify(
-    './src/test/unit/sequencerSpec.js',
-    './build/test/unit/sequencerSpec.bundle.js');
-
-  installWatchify(
-    './src/test/integration/playbackSpec.js',
-    './build/test/integration/playbackSpec.bundle.js');
+  [
+    'unit/playersPoolSpec',
+    'unit/playbackSlotSpec',
+    'unit/sequencerSpec',
+    'integration/playbackSpec'
+  ].forEach(function(partialPath) {
+      installWatchify(
+        './src/test/' + partialPath + '.js',
+        './build/test/' + partialPath + '.bundle.js');
+    });
 
   gulp.src(['src/main/**/*.js', 'src/test/**/*.js'])
     .pipe(watch(['src/main/**/*.js', 'src/test/**/*.js']))

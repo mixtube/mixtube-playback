@@ -114,8 +114,7 @@ function playbackSlot(config) {
         _state = States.ending;
         _stopCuesHandler();
 
-        // make sure the cues are called while ending if it has not been done before
-        callEndingSoonOnce();
+        // make sure the ending cue is called while ending if it has not been done before
         callEndingOnce();
 
         _endPromise =
