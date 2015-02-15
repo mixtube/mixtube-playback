@@ -116,7 +116,9 @@ function playback(config) {
   var Playback = {
     play: _sequencer.play,
     pause: _sequencer.pause,
-    skip: _sequencer.skip
+    skip: _sequencer.skip,
+    stop: _sequencer.stop,
+    checkNextEntry: _sequencer.checkNextEntry
   };
 
   return Object.freeze(Playback);

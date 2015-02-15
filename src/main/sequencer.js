@@ -177,12 +177,16 @@ function sequencer(config) {
   }
 
   /**
+   * Pre-loads the given entry if not preloaded yet.
+   *
    * @param {Entry} entry
    */
   function preload(entry) {
-    var slot = newPlaybackSlot(entry);
-    // setting the pre-loading singleton will automatically starts loading the slot
-    _preloadingSlot.set(slot);
+    if (!_preloadingSlot.get() || _preloadingSlot.get().entry !== entry) {
+      var slot = newPlaybackSlot(entry);
+      // setting the pre-loading singleton will automatically starts loading the slot
+      _preloadingSlot.set(slot);
+    }
   }
 
   /**
@@ -289,6 +293,32 @@ function sequencer(config) {
     _state.set(States.paused);
   }
 
+  function stop() {
+    // end every "active" slot and let the sequencer stop
+    [_preloadingSlot, _skippingSlot, _playingSlot]
+      .forEach(function(slotSingleton) {
+        slotSingleton.set(null);
+      });
+  }
+
+  /**
+   * Checks if the next entry changed and pre-loads the new one if necessary.
+   *
+   * This method should be called by the user when a change in the underlying model would make "nextEntryProducer"
+   * returning something different than the previous call.
+   */
+  function checkNextEntry() {
+    if (_playingSlot.get()) {
+      var nextEntry = _config.nextEntryProducer(_playingSlot.get().entry);
+      if (!nextEntry) {
+        // there is no entry after to preload so simply unload the existing one
+        _preloadingSlot.set(null);
+      } else {
+        preload(nextEntry);
+      }
+    }
+  }
+
   /**
    * @name Sequencer
    * @typedef Sequencer
@@ -296,7 +326,9 @@ function sequencer(config) {
   var Sequencer = {
     play: play,
     pause: pause,
-    skip: skip
+    skip: skip,
+    stop: stop,
+    checkNextEntry: checkNextEntry
   };
 
   return Object.freeze(Sequencer);
