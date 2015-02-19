@@ -542,10 +542,13 @@ describe('A sequencer', function() {
     var loadingChangedSpy,
 
       seq = sequencerWithDefaults(function(seqDefaultCfg) {
-        var expectedLoadingChangedCallsCount = 4,
-          runChecksAfter4 = after(expectedLoadingChangedCallsCount, runChecks);
+        var expectedLoadingChangedCallsCount = 6,
+          finishAfter = after(expectedLoadingChangedCallsCount, function() {
+            runChecks();
+            done();
+          });
 
-        loadingChangedSpy = seqDefaultCfg.loadingChanged;
+        loadingChangedSpy = seqDefaultCfg.loadingChanged.and.callFake(finishAfter);
 
         return {
           nextEntryProducer: _nextEntryProducer,
@@ -555,25 +558,29 @@ describe('A sequencer', function() {
               slot.load.and.returnValue(Promise.reject());
             }
             return slot;
-          },
-          loadingChanged: seqDefaultCfg.loadingChanged.and.callFake(runChecksAfter4)
+          }
         };
       });
 
     seq.play();
     seq.skip(_entries[0]);
     defer(function() {
+      // entry 1 will fail to load and the sequencer will try entry 2
       seq.skip(_entries[1]);
     });
 
     function runChecks() {
       expect(loadingChangedSpy.calls.allArgs()).toEqual([
+        // first skip
         [_entries[0], true],
         [_entries[0], false],
+        // second skip -> fail to load
         [_entries[1], true],
-        [_entries[1], false]
+        [_entries[1], false],
+        // second skip retry with entry 2
+        [_entries[2], true],
+        [_entries[2], false]
       ]);
-      done();
     }
   });
 
