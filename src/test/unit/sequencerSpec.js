@@ -352,6 +352,49 @@ describe('A sequencer', function() {
     }
   });
 
+  it('stops properly when stop is called', function(done) {
+
+    var slots = [],
+      stateChangedSpy,
+
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+
+        stateChangedSpy = seqDefaultCfg.stateChanged.and.callFake(function(prevState, newState) {
+          if (newState === sequencer.States.stopped) {
+            runChecks();
+            done();
+          }
+        });
+
+        return {
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+            slots.push(slot);
+            return slot;
+          }
+        };
+      });
+
+    seq.play();
+    seq.skip(_entries[0]);
+
+    defer(function() {
+      seq.skip(_entries[1]);
+
+      defer(function() {
+        seq.stop();
+      });
+    });
+
+    function runChecks() {
+      slots.forEach(function(slot) {
+        expect(slot.end).toHaveBeenCalled();
+      });
+
+      expect(stateChangedSpy).toHaveBeenCalledWith(sequencer.States.playing, sequencer.States.stopped);
+    }
+  });
+
   it('calls the loadFailed callback when en entry failed to load', function(done) {
     var loadFailedSpy,
       loadError = new Error('mock error'),
