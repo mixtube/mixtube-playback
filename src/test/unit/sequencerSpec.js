@@ -15,7 +15,8 @@ var sequencer = require('../../main/sequencer'),
   identity = require('lodash/utility/identity'),
   last = require('lodash/array/last'),
   initial = require('lodash/array/initial'),
-  contains = require('lodash/collection/contains');
+  contains = require('lodash/collection/contains'),
+  pullAt = require('lodash/array/pullAt');
 
 
 describe('A sequencer', function() {
@@ -49,8 +50,20 @@ describe('A sequencer', function() {
     return sequencer(defaults({}, inter(defaultConfig), defaultConfig));
   }
 
-  var _entries,
-    _nextEntryProducer;
+  function buildNextEntryProducer(entries) {
+    return function sequentialNextEntryProducer(entry) {
+      var idx = 0;
+      if (entry) {
+        idx = entries.indexOf(entry) + 1;
+      }
+      if (idx >= entries.length) {
+        return null;
+      }
+      return entries[idx];
+    };
+  }
+
+  var _entries;
 
   beforeEach(function() {
     _entries = times(5, function(idx) {
@@ -60,17 +73,6 @@ describe('A sequencer', function() {
         video: {provider: 'mock', id: 'video-' + id}
       };
     });
-
-    _nextEntryProducer = function(entry) {
-      var idx = 0;
-      if (entry) {
-        idx = _entries.indexOf(entry) + 1;
-      }
-      if (idx >= _entries.length) {
-        return null;
-      }
-      return _entries[idx];
-    };
   });
 
   it('does not call nextEntryProducer first call to play', function(done) {
@@ -93,7 +95,7 @@ describe('A sequencer', function() {
   it('executes the right sequence when manually skipping to an entry', function(done) {
     var nextEntryProducerSpy =
         jasmine.createSpy('nextEntryProducerSpy')
-          .and.callFake(_nextEntryProducer),
+          .and.callFake(buildNextEntryProducer(_entries)),
 
       playbackSlotProducerSpy = jasmine.createSpy('nextEntryProducerSpy');
 
@@ -160,7 +162,7 @@ describe('A sequencer', function() {
         comingNextSpy = seqDefaultCfg.comingNext.and.callFake(finishAfter);
 
         return {
-          nextEntryProducer: _nextEntryProducer,
+          nextEntryProducer: buildNextEntryProducer(_entries),
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
 
@@ -193,7 +195,7 @@ describe('A sequencer', function() {
 
     var seq = sequencerWithDefaults(function(seqDefaultCfg) {
       return {
-        nextEntryProducer: _nextEntryProducer,
+        nextEntryProducer: buildNextEntryProducer(_entries),
         playbackSlotProducer: function(producerCfg) {
           var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
           slots.push(slot);
@@ -395,6 +397,89 @@ describe('A sequencer', function() {
     }
   });
 
+  it('preloads the new next entry when checkNextEntry is called and the next entry changed', function(done) {
+
+    var entries = _entries.slice(0, 3),
+      slots = [],
+
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+        return {
+          nextEntryProducer: buildNextEntryProducer(entries),
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+            slots.push(slot);
+
+            if(slot.entry === _entries[2]) {
+              defer(function() {
+                runChecks();
+                done();
+              });
+            }
+
+            return slot;
+          }
+        };
+      });
+
+    seq.play();
+    seq.skip(entries[0]);
+
+    defer(function() {
+      // remove the next
+      pullAt(entries, 1);
+      seq.checkNextEntry();
+    });
+
+    function runChecks() {
+      // expect
+      slots.forEach(function(slot) {
+        expect(slot.load).toHaveBeenCalled();
+      });
+
+      expect(slots[1].end).toHaveBeenCalled();
+      expect(slots[2].end).not.toHaveBeenCalled();
+    }
+  });
+
+  it('does nothing when checkNextEntry is called and the next entry has not changed', function(done) {
+
+    var entries = _entries.slice(0, 3),
+      slots = [],
+
+      seq = sequencerWithDefaults(function(seqDefaultCfg) {
+        return {
+          nextEntryProducer: buildNextEntryProducer(entries),
+          playbackSlotProducer: function(producerCfg) {
+            var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
+            slots.push(slot);
+
+            if(slot.entry === _entries[1]) {
+              defer(function() {
+                runChecks();
+                done();
+              });
+            }
+
+            return slot;
+          }
+        };
+      });
+
+    seq.play();
+    seq.skip(entries[0]);
+
+    defer(function() {
+      seq.checkNextEntry();
+    });
+
+    function runChecks() {
+      // expect
+      expect(slots[0].load).toHaveBeenCalled();
+      expect(slots[1].load).toHaveBeenCalled();
+      expect(slots[1].end).not.toHaveBeenCalled();
+    }
+  });
+
   it('calls the loadFailed callback when en entry failed to load', function(done) {
     var loadFailedSpy,
       loadError = new Error('mock error'),
@@ -410,7 +495,7 @@ describe('A sequencer', function() {
         });
 
         return {
-          nextEntryProducer: _nextEntryProducer,
+          nextEntryProducer: buildNextEntryProducer(_entries),
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             slot.load.and.returnValue(Promise.reject(loadError));
@@ -436,7 +521,7 @@ describe('A sequencer', function() {
       startedSlot,
       seq = sequencerWithDefaults(function(seqDefaultCfg) {
         return {
-          nextEntryProducer: _nextEntryProducer,
+          nextEntryProducer: buildNextEntryProducer(_entries),
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             // make the all slots for the entries from 0 to 2 failing on load
@@ -467,7 +552,7 @@ describe('A sequencer', function() {
       startedSlot,
       seq = sequencerWithDefaults(function(seqDefaultCfg) {
         return {
-          nextEntryProducer: _nextEntryProducer,
+          nextEntryProducer: buildNextEntryProducer(_entries),
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             if (slot.entry === _entries[0]) {
@@ -530,7 +615,7 @@ describe('A sequencer', function() {
         stateChangedSpy = seqDefaultCfg.stateChanged;
 
         return {
-          nextEntryProducer: _nextEntryProducer,
+          nextEntryProducer: buildNextEntryProducer(_entries),
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             if (slot.entry === _entries[0]) {
@@ -594,7 +679,7 @@ describe('A sequencer', function() {
         loadingChangedSpy = seqDefaultCfg.loadingChanged.and.callFake(finishAfter);
 
         return {
-          nextEntryProducer: _nextEntryProducer,
+          nextEntryProducer: buildNextEntryProducer(_entries),
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             if (slot.entry === _entries[1]) {
