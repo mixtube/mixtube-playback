@@ -38,9 +38,6 @@ function installWatchify(src, dest) {
 gulp.task('watch', function() {
 
   [
-    'unit/playersPoolSpec',
-    'unit/playbackSlotSpec',
-    'unit/sequencerSpec',
     'integration/playbackSpec'
   ].forEach(function(partialPath) {
       installWatchify(
@@ -54,6 +51,7 @@ gulp.task('watch', function() {
     .pipe(jshint.reporter('jshint-stylish'));
 });
 
+// run a local server for integration tests (manual)
 gulp.task('serve', ['watch'], function() {
   var baseDirs = ['src/test/integration/web', 'build/test/integration'];
 
