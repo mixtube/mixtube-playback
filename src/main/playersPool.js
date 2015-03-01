@@ -47,7 +47,11 @@ function playersPool(config) {
 
   function releasePlayer(player) {
     var playersCache = _playersCacheByProvider[player.provider];
-    var playerCacheEntry = find(playersCache, {player: player});
+
+    // don't leverage the deep comparison of find, just a shallow (identity) comparison
+    var playerCacheEntry = find(playersCache, function(entry) {
+      return entry.player === player;
+    });
 
     if (!playerCacheEntry) {
       throw new Error('Found a foreign player instance registered in the pool');
