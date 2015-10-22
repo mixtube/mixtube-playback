@@ -9,7 +9,7 @@ var isFunction = require('lodash/lang/isFunction'),
   slice = require('lodash/array/slice');
 
 /**
- * Defers executing the `func` function until the current call stack has cleared.
+ * Defers executing the `func` function until the current microtasks stack has cleared.
  * Additional arguments will be provided to `func` when it is invoked.
  *
  * It is a version inspired from the lodash one but based on Promise instead of timeout which
@@ -17,12 +17,8 @@ var isFunction = require('lodash/lang/isFunction'),
  *
  * @param {Function} func The function to defer.
  * @param {...*} [arg] Arguments to invoke the function with.
- * @example
- *
- * _.defer(function(text) { console.log(text); }, 'deferred');
- * // logs 'deferred' after one or more milliseconds
  */
-function defer(func) {
+function enqueueMicrotask(func) {
   if (!isFunction(func)) {
     throw new TypeError();
   }
@@ -30,4 +26,4 @@ function defer(func) {
   Promise.resolve().then(function() { func.apply(undefined, args); });
 }
 
-module.exports = defer;
+module.exports = enqueueMicrotask;

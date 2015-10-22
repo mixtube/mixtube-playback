@@ -4,7 +4,7 @@
 
 var playbackSlot = require('../../main/playbackSlot'),
   playersPoolMock = require('./playersPoolMock'),
-  defer = require('./defer'),
+  enqueueMicrotask = require('./enqueueMicrotask'),
   defaults = require('lodash/object/defaults'),
   constant = require('lodash/utility/constant'),
   identity = require('lodash/utility/identity'),
@@ -147,7 +147,7 @@ describe('A player slot', function() {
       var config = {audioGain: 0};
       slot.start(config);
 
-      defer(function() {
+      enqueueMicrotask(function() {
         expect(playSpy).not.toHaveBeenCalled();
 
         done();
@@ -176,7 +176,7 @@ describe('A player slot', function() {
 
       slot.end();
 
-      defer(function() {
+      enqueueMicrotask(function() {
         expect(fadeOutSpy).not.toHaveBeenCalled();
 
         done();
@@ -298,7 +298,7 @@ describe('A player slot', function() {
 
     slot.load().then(function() {
       slot.start();
-      defer(function() {
+      enqueueMicrotask(function() {
         slot.end().then(function() {
 
           expect(fadeOutSpy).toHaveBeenCalled();
@@ -355,7 +355,7 @@ describe('A player slot', function() {
 
       slot.start();
 
-      defer(function() {
+      enqueueMicrotask(function() {
         // we are going to execute 3 "cues handler" cycles each time with a different currentTime value
 
         playerProps.currentTime = playerProps.duration * 1 / 4;

@@ -4,7 +4,7 @@
 
 var sequencer = require('../../main/sequencer'),
   playbackSlotMock = require('./playbackSlotMock'),
-  defer = require('./defer'),
+  enqueueMicrotask = require('./enqueueMicrotask'),
   describe = jasmine.getEnv().describe,
   beforeEach = jasmine.getEnv().beforeEach,
   it = jasmine.getEnv().it,
@@ -86,7 +86,7 @@ describe('A sequencer', function() {
 
     seq.play();
 
-    defer(function() {
+    enqueueMicrotask(function() {
       expect(nextEntryProducerSpy).not.toHaveBeenCalledWith(null);
 
       done();
@@ -137,13 +137,13 @@ describe('A sequencer', function() {
           _entries[4]
         ]);
 
-        defer(done);
+        enqueueMicrotask(done);
       });
 
     seq.skip(_entries[0]);
     seq.play();
 
-    defer(function() {
+    enqueueMicrotask(function() {
       seq.skip(_entries[3]);
     });
   });
@@ -169,9 +169,9 @@ describe('A sequencer', function() {
 
             // fake auto ending
             slot.start.and.callFake(function() {
-              defer(function() {
+              enqueueMicrotask(function() {
                 producerCfg.endingSoon();
-                defer(function() {
+                enqueueMicrotask(function() {
                   producerCfg.ending();
                 });
               });
@@ -211,7 +211,7 @@ describe('A sequencer', function() {
     new Promise(function(resolve) {
       (function deferredWhile(idx) {
         if (idx < _entries.length) {
-          defer(function() {
+          enqueueMicrotask(function() {
             seq.skip(_entries[idx]);
             deferredWhile(idx + 1);
           });
@@ -250,8 +250,8 @@ describe('A sequencer', function() {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             slot.end.and.callFake(function() {
               // doubled defer to simulate how actual implementation behaves
-              defer(function() {
-                defer(function() {
+              enqueueMicrotask(function() {
+                enqueueMicrotask(function() {
                   producerCfg.ending();
                 });
               });
@@ -266,7 +266,7 @@ describe('A sequencer', function() {
     seq.skip(_entries[0]);
     seq.play();
 
-    defer(function() {
+    enqueueMicrotask(function() {
       seq.skip(_entries[1]);
     });
 
@@ -286,7 +286,7 @@ describe('A sequencer', function() {
             slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
 
             slot.load.and.callFake(function() {
-              defer(runChecks);
+              enqueueMicrotask(runChecks);
               return Promise.resolve();
             });
 
@@ -323,7 +323,7 @@ describe('A sequencer', function() {
             var step = steps[slotsIdx];
 
             slot.load.and.callFake(function() {
-              defer(step);
+              enqueueMicrotask(step);
               return Promise.resolve();
             });
 
@@ -345,7 +345,7 @@ describe('A sequencer', function() {
     function step2() {
       seq.play();
 
-      defer(function() {
+      enqueueMicrotask(function() {
 
         expect(slots[0].proceed).not.toHaveBeenCalled();
         expect(slots[1].proceed).toHaveBeenCalled();
@@ -381,10 +381,10 @@ describe('A sequencer', function() {
     seq.play();
     seq.skip(_entries[0]);
 
-    defer(function() {
+    enqueueMicrotask(function() {
       seq.skip(_entries[1]);
 
-      defer(function() {
+      enqueueMicrotask(function() {
         seq.stop();
       });
     });
@@ -411,7 +411,7 @@ describe('A sequencer', function() {
             slots.push(slot);
 
             if (slot.entry === _entries[2]) {
-              defer(function() {
+              enqueueMicrotask(function() {
                 runChecks();
                 done();
               });
@@ -425,7 +425,7 @@ describe('A sequencer', function() {
     seq.play();
     seq.skip(entries[0]);
 
-    defer(function() {
+    enqueueMicrotask(function() {
       // remove the next
       pullAt(entries, 1);
       seq.checkNextEntry();
@@ -455,7 +455,7 @@ describe('A sequencer', function() {
             slots.push(slot);
 
             if (slot.entry === _entries[1]) {
-              defer(function() {
+              enqueueMicrotask(function() {
                 runChecks();
                 done();
               });
@@ -469,7 +469,7 @@ describe('A sequencer', function() {
     seq.play();
     seq.skip(entries[0]);
 
-    defer(function() {
+    enqueueMicrotask(function() {
       // add the next
       entries.push(_entries[1]);
       seq.checkNextEntry();
@@ -498,7 +498,7 @@ describe('A sequencer', function() {
             slots.push(slot);
 
             if (slot.entry === _entries[1]) {
-              defer(function() {
+              enqueueMicrotask(function() {
                 runChecks();
                 done();
               });
@@ -512,7 +512,7 @@ describe('A sequencer', function() {
     seq.play();
     seq.skip(entries[0]);
 
-    defer(function() {
+    enqueueMicrotask(function() {
       seq.checkNextEntry();
     });
 
@@ -574,7 +574,7 @@ describe('A sequencer', function() {
             } else {
               slot.start.and.callFake(function() {
                 startedSlot = slot;
-                defer(runChecks);
+                enqueueMicrotask(runChecks);
               });
             }
             return slot;
@@ -601,7 +601,7 @@ describe('A sequencer', function() {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             if (slot.entry === _entries[0]) {
               slot.start.and.callFake(function() {
-                defer(producerCfg.ending);
+                enqueueMicrotask(producerCfg.ending);
               });
             } else if (contains(_entries.slice(1, lastFailingEntryIdx + 1), slot.entry)) {
               // make the all slots for the entries from 1 to 3 failing on load
@@ -609,7 +609,7 @@ describe('A sequencer', function() {
             } else {
               slot.start.and.callFake(function() {
                 startedSlot = slot;
-                defer(runChecks);
+                enqueueMicrotask(runChecks);
               });
             }
             return slot;
@@ -664,7 +664,7 @@ describe('A sequencer', function() {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             if (slot.entry === _entries[0]) {
               slot.start.and.callFake(function() {
-                defer(producerCfg.ending);
+                enqueueMicrotask(producerCfg.ending);
               });
             } else {
               // make all the slots for the other entries failing on load
@@ -697,7 +697,7 @@ describe('A sequencer', function() {
 
     seq.play();
     seq.skip(_entries[0]);
-    defer(function() {
+    enqueueMicrotask(function() {
       seq.skip(_entries[1]);
     });
 
@@ -736,7 +736,7 @@ describe('A sequencer', function() {
 
     seq.play();
     seq.skip(_entries[0]);
-    defer(function() {
+    enqueueMicrotask(function() {
       // entry 1 will fail to load and the sequencer will try entry 2
       seq.skip(_entries[1]);
     });

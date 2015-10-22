@@ -6,6 +6,7 @@ var animationGroup = require('./animationGroup'),
   animationFade = require('./animationFade'),
   isNumber = require('lodash/lang/isNumber'),
   has = require('lodash/object/has'),
+  defer = require('lodash/function/defer'),
   EventEmitter = require('events').EventEmitter;
 
 var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve, reject) {
@@ -175,7 +176,12 @@ function playerYoutube(config) {
         if (evt.data === YT.PlayerState.PLAYING) {
           unbindLoadListeners();
           ytPlayer.pauseVideo();
-          resolve();
+
+          // sometimes videos are not playing in Safari 9 until a re-layout is triggered
+          // seems like resolving the load promise in the next macro task fixes it
+          defer(function() {
+            resolve();
+          });
         }
       }
 
