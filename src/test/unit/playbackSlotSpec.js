@@ -5,9 +5,9 @@
 var playbackSlot = require('../../main/playbackSlot'),
   playersPoolMock = require('./playersPoolMock'),
   enqueueMicrotask = require('./enqueueMicrotask'),
-  defaults = require('lodash/object/defaults'),
-  constant = require('lodash/utility/constant'),
-  identity = require('lodash/utility/identity'),
+  defaults = require('lodash/defaults'),
+  constant = require('lodash/constant'),
+  identity = require('lodash/identity'),
 
   describe = jasmine.getEnv().describe,
   it = jasmine.getEnv().it,

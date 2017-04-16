@@ -9,15 +9,15 @@ var sequencer = require('../../main/sequencer'),
   beforeEach = jasmine.getEnv().beforeEach,
   it = jasmine.getEnv().it,
   expect = jasmine.getEnv().expect,
-  defaults = require('lodash/object/defaults'),
-  after = require('lodash/function/after'),
-  times = require('lodash/utility/times'),
-  identity = require('lodash/utility/identity'),
-  last = require('lodash/array/last'),
-  initial = require('lodash/array/initial'),
-  contains = require('lodash/collection/contains'),
-  pullAt = require('lodash/array/pullAt'),
-  find = require('lodash/collection/find');
+  defaults = require('lodash/defaults'),
+  after = require('lodash/after'),
+  times = require('lodash/times'),
+  identity = require('lodash/identity'),
+  last = require('lodash/last'),
+  initial = require('lodash/initial'),
+  includes = require('lodash/includes'),
+  pullAt = require('lodash/pullAt'),
+  find = require('lodash/find');
 
 
 describe('A sequencer', function() {
@@ -569,7 +569,7 @@ describe('A sequencer', function() {
           playbackSlotProducer: function(producerCfg) {
             var slot = seqDefaultCfg.playbackSlotProducer(producerCfg);
             // make the all slots for the entries from 0 to 2 failing on load
-            if (contains(_entries.slice(0, lastFailingEntryIdx + 1), slot.entry)) {
+            if (includes(_entries.slice(0, lastFailingEntryIdx + 1), slot.entry)) {
               slot.load.and.returnValue(Promise.reject());
             } else {
               slot.start.and.callFake(function() {
@@ -603,7 +603,7 @@ describe('A sequencer', function() {
               slot.start.and.callFake(function() {
                 enqueueMicrotask(producerCfg.ending);
               });
-            } else if (contains(_entries.slice(1, lastFailingEntryIdx + 1), slot.entry)) {
+            } else if (includes(_entries.slice(1, lastFailingEntryIdx + 1), slot.entry)) {
               // make the all slots for the entries from 1 to 3 failing on load
               slot.load.and.returnValue(Promise.reject());
             } else {

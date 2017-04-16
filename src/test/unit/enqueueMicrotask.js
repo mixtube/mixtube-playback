@@ -5,8 +5,8 @@
  */
 'use strict';
 
-var isFunction = require('lodash/lang/isFunction'),
-  slice = require('lodash/array/slice');
+var isFunction = require('lodash/isFunction'),
+  slice = require('lodash/slice');
 
 /**
  * Defers executing the `func` function until the current microtasks stack has cleared.

@@ -1,7 +1,7 @@
 'use strict';
 
-var defaults = require('lodash/object/defaults'),
-  noop = require('lodash/utility/noop');
+var defaults = require('lodash/defaults'),
+  noop = require('lodash/noop');
 
 /**
  * @template T
