@@ -1,7 +1,7 @@
 'use strict';
 
-var isString = require('lodash/lang/isString'),
-  isArray = require('lodash/lang/isArray');
+var isString = require('lodash/isString'),
+  isArray = require('lodash/isArray');
 
 /**
  * @param {Array.<string>} names

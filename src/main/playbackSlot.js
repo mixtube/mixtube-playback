@@ -3,7 +3,7 @@
 var enumeration = require('./enumeration'),
   barrier = require('./barrier'),
   promiseDone = require('./promiseDone'),
-  once = require('lodash/function/once');
+  once = require('lodash/once');
 
 /**
  * @typedef {Object} PlaybackSlotStates

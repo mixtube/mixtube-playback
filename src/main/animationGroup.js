@@ -1,7 +1,7 @@
 'use strict';
 
-var mapValues = require('lodash/object/mapValues'),
-  forOwn = require('lodash/object/forOwn');
+var mapValues = require('lodash/mapValues'),
+  forOwn = require('lodash/forOwn');
 
 /**
  * @param {{animations: Object.<string, AnimationFade>}} config

@@ -4,9 +4,9 @@
 
 var animationGroup = require('./animationGroup'),
   animationFade = require('./animationFade'),
-  isNumber = require('lodash/lang/isNumber'),
-  has = require('lodash/object/has'),
-  defer = require('lodash/function/defer'),
+  isNumber = require('lodash/isNumber'),
+  has = require('lodash/has'),
+  defer = require('lodash/defer'),
   EventEmitter = require('events').EventEmitter;
 
 var _ytApiPromise = new Promise(function ytApiPromiseExecutor(resolve, reject) {
