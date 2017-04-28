@@ -41,7 +41,6 @@ var States = enumeration(['pristine', 'loading', 'loaded', 'running', 'ending', 
  */
 function playbackSlot(config) {
 
-  /** @type {playbackSlotConfig} */
   var _config = config,
     _playersPool = _config.playersPool,
 
@@ -150,18 +149,25 @@ function playbackSlot(config) {
       _state = States.loading;
 
       var video = getVideo();
-      _player = _playersPool.getPlayer(video.provider);
 
       _loadPromise =
-        _player.loadById(video.id)
-          .then(function() {
-            _state = States.loaded;
-            _duration = _player.duration * 1000;
+        _playersPool
+          .getPlayer(video.provider)
+          .then(function assignPlayerVariable(player) {
+            // assign the player globally for direct access later
+            _player = player;
           })
-          .catch(function(e) {
-            end();
-            // propagate the rejection
-            return Promise.reject(e);
+          .then(function loadVideo() {
+            return _player.loadById(video.id)
+              .then(function() {
+                _state = States.loaded;
+                _duration = _player.duration * 1000;
+              })
+              .catch(function(e) {
+                end();
+                // propagate the rejection
+                return Promise.reject(e);
+              });
           });
     }
 

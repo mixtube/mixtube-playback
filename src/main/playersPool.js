@@ -1,20 +1,27 @@
 'use strict';
 
 var find = require('lodash/find'),
-  has = require('lodash/has');
+  has = require('lodash/has'),
+  objectPool = require('./objectsPool');
 
 /**
- * @param {{playerFactory: PlayerFactory}} config
+ * @typedef Object playersPoolConfig
+ * @property {PlayerFactory} playerFactory
+ * @property {number} [Infinity] max the maximum number of player to create
+ */
+
+/**
+ * @param {{playerFactory: PlayerFactory, max: number}} config
  * @returns {PlayersPool}
  */
 function playersPool(config) {
 
   var _config = config,
-    _playersCacheByProvider = {};
+    _poolsByProviders = {};
 
   /**
    * @param {string} provider
-   * @returns {Player}
+   * @returns {Promise.<Player>}
    */
   function getPlayer(provider) {
     if (!provider) {
@@ -25,39 +32,20 @@ function playersPool(config) {
       throw new Error('Unsupported provider type ' + provider);
     }
 
-    if (!has(_playersCacheByProvider, provider)) {
-      _playersCacheByProvider[provider] = [];
+    if (!has(_poolsByProviders, provider)) {
+      _poolsByProviders[provider] = objectPool({
+        factory: function() {
+          return _config.playerFactory.newPlayer(provider);
+        },
+        max: _config.max
+      });
     }
 
-    var playersCache = _playersCacheByProvider[provider];
-
-    var playerCacheEntry = find(playersCache, {free: true});
-    if (!playerCacheEntry) {
-      playerCacheEntry = {
-        player: _config.playerFactory.newPlayer(provider),
-        free: false
-      };
-      playersCache.push(playerCacheEntry);
-    } else {
-      playerCacheEntry.free = false;
-    }
-
-    return playerCacheEntry.player;
+    return _poolsByProviders[provider].acquire();
   }
 
   function releasePlayer(player) {
-    var playersCache = _playersCacheByProvider[player.provider];
-
-    // don't leverage the deep comparison of find, just a shallow (identity) comparison
-    var playerCacheEntry = find(playersCache, function(entry) {
-      return entry.player === player;
-    });
-
-    if (!playerCacheEntry) {
-      throw new Error('Found a foreign player instance registered in the pool');
-    }
-
-    playerCacheEntry.free = true;
+    _poolsByProviders[player.provider].release(player);
   }
 
   /**

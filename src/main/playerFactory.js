@@ -30,7 +30,6 @@ var playerYoutube = require('./playerYoutube'),
  */
 function playerFactory(config) {
 
-  /** @type {playbackConfig} */
   var _config = config,
     _playersFactories = {
       youtube: playerYoutube

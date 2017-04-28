@@ -31,13 +31,14 @@ function playersPoolMock(interceptor) {
         return props.currentTime;
       },
       loadById: jasmine.createSpy('loadByIdSpy').and.returnValue(Promise.resolve()),
+      checkDrmById: jasmine.createSpy('checkDrmById').and.returnValue(Promise.resolve({playable: true})),
       play: jasmine.createSpy('playSpy'),
       stop: jasmine.createSpy('stopSpy'),
       fadeIn: jasmine.createSpy('fadeInSpy'),
       fadeOut: jasmine.createSpy('fadeOutSpy').and.returnValue(Promise.resolve())
     };
 
-    return interceptor(props, player);
+    return Promise.resolve(interceptor(props, player));
   }
 
   /**

@@ -8,17 +8,11 @@ var playbackSlot = require('../../main/playbackSlot'),
   defaults = require('lodash/defaults'),
   constant = require('lodash/constant'),
   identity = require('lodash/identity'),
+  pFinally = require('p-finally'),
 
   describe = jasmine.getEnv().describe,
   it = jasmine.getEnv().it,
   expect = jasmine.getEnv().expect;
-
-function always(promise, cb) {
-  promise.then(cb, function(err) {
-    cb();
-    return Promise.reject(err);
-  });
-}
 
 describe('A player slot', function() {
 
@@ -87,7 +81,7 @@ describe('A player slot', function() {
       return {playersPool: pool};
     });
 
-    always(slot.load().then(loadSuccessSpy), function() {
+    pFinally(slot.load().then(loadSuccessSpy), function() {
       expect(loadSuccessSpy).toHaveBeenCalled();
       done();
     });
@@ -196,7 +190,7 @@ describe('A player slot', function() {
 
       var slot = playbackSlotWithDefaults(constant({playersPool: pool}));
 
-      always(slot.load().then(null, loadFailSpy), function() {
+      pFinally(slot.load().then(null, loadFailSpy), function() {
         expect(loadFailSpy).toHaveBeenCalled();
         done();
       });
@@ -219,7 +213,7 @@ describe('A player slot', function() {
         }
       }));
 
-      always(slot.load(), function() {
+      pFinally(slot.load(), function() {
         expect(endingSoonSpy).not.toHaveBeenCalled();
         expect(endingSpy).not.toHaveBeenCalled();
         enqueueMicrotask(function() {

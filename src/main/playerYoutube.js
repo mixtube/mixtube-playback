@@ -2,6 +2,12 @@
 
 'use strict';
 
+/**
+ * @typedef {Object} DrmCheckReport
+ * @property {boolean} playable
+ * @property {*} code
+ */
+
 var animationGroup = require('./animationGroup'),
   animationFade = require('./animationFade'),
   isNumber = require('lodash/isNumber'),
@@ -87,6 +93,9 @@ function playerYoutube(config) {
             onStateChange: function(evt) {
               _emitter.emit('stateChange', evt);
             },
+            onPlaybackQualityChange: function(evt) {
+              _emitter.emit('playbackQualityChange', evt);
+            },
             onError: function(evt) {
               _emitter.emit('error', evt);
             }
@@ -164,9 +173,21 @@ function playerYoutube(config) {
       });
   }
 
-  function newLoadPromiseExecutor(ytPlayer, id) {
-    return function loadPromiseExecutor(resolve, reject) {
+  function initPlayer() {
+    return _ytApiPromise
+      .then(function() {
+        if (!_ytPlayerPromise) {
+          _ytPlayerPromise = newYtPlayer();
+        }
+        return _ytPlayerPromise;
+      })
+      .then(function(ytPlayer) {
+        _ytPlayer = ytPlayer;
+      });
+  }
 
+  function load(ytPlayer, id) {
+    return new Promise(function loadPromiseExecutor(resolve, reject) {
       function unbindLoadListeners() {
         _emitter.removeListener('stateChange', loadStateChangeListener);
         _emitter.removeListener('error', loadErrorListener);
@@ -176,7 +197,6 @@ function playerYoutube(config) {
         if (evt.data === YT.PlayerState.PLAYING) {
           unbindLoadListeners();
           ytPlayer.pauseVideo();
-
           // sometimes videos are not playing in Safari 9 until a re-layout is triggered
           // seems like resolving the load promise in the next macro task fixes it
           defer(function() {
@@ -193,27 +213,51 @@ function playerYoutube(config) {
       // we wait for the player the start playing once to consider it loaded
       _emitter.on('stateChange', loadStateChangeListener);
       _emitter.on('error', loadErrorListener);
-
       ytPlayer.loadVideoById(id);
       ytPlayer.setPlaybackQuality(_playbackQuality);
-    };
+    });
   }
 
-  function load(ytPlayer, id) {
-    return new Promise(newLoadPromiseExecutor(ytPlayer, id));
+  /**
+   * @returns {Promise.<DrmCheckReport>}
+   */
+  function checkDrm(ytPlayer, id) {
+    return new Promise(function checkDrmPromiseExecutor(resolve, reject) {
+      function unbindCheckDrmListeners() {
+        _emitter.removeListener('playbackQualityChange', checkDrmPlaybackQualityChange);
+        _emitter.removeListener('error', checkDrmErrorListener);
+      }
+
+      function checkDrmPlaybackQualityChange() {
+        unbindCheckDrmListeners();
+        resolve({playable: true});
+      }
+
+      function checkDrmErrorListener(evt) {
+        unbindCheckDrmListeners();
+        resolve({playable: false, code: evt.data});
+      }
+
+      // playbackQualityChange triggered means the video is playable DRM wise, error means it is not
+      _emitter.on('playbackQualityChange', checkDrmPlaybackQualityChange);
+      _emitter.on('error', checkDrmErrorListener);
+      // loading and posing straight allows to trigger an error if there is a DRM limitation
+      ytPlayer.loadVideoById(id);
+      ytPlayer.pauseVideo();
+    });
   }
 
   function loadById(id) {
-    return _ytApiPromise
+    return initPlayer()
       .then(function() {
-        if (!_ytPlayerPromise) {
-          _ytPlayerPromise = newYtPlayer();
-        }
-        return _ytPlayerPromise;
-      })
-      .then(function(ytPlayer) {
-        _ytPlayer = ytPlayer;
-        return load(ytPlayer, id);
+        return load(_ytPlayer, id);
+      });
+  }
+
+  function checkDrmById(id) {
+    return initPlayer()
+      .then(function() {
+        return checkDrm(_ytPlayer, id);
       });
   }
 
@@ -285,6 +329,7 @@ function playerYoutube(config) {
       }
     },
     loadById: loadById,
+    checkDrmById: checkDrmById,
     play: play,
     pause: pause,
     resume: resume,

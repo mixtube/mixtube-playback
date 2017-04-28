@@ -4,6 +4,7 @@ var sequencer = require('./sequencer'),
   playbackSlot = require('./playbackSlot'),
   playersPool = require('./playersPool'),
   playerFactory = require('./playerFactory'),
+  drmChecker = require('./drmChecker'),
   defaults = require('lodash/defaults'),
   noop = require('lodash/noop');
 
@@ -18,13 +19,13 @@ var sequencer = require('./sequencer'),
  */
 
 /**
- * @typedef {Object} playbackDebug
+ * @typedef {Object} engineDebug
  * @property {number} mediaDuration the forced duration of the medias in seconds
  * @property {number} mediaQuality the forced quality for the medias (supported values: low, default)
  */
 
 /**
- * @typedef {Object} playbackConfig
+ * @typedef {Object} engineConfig
  * @property {function: Element} elementProducer
  * @property {function(*): Video} videoProducer
  * @property {function(*): *} nextEntryProducer
@@ -35,8 +36,13 @@ var sequencer = require('./sequencer'),
  * @property {?function(Entry, boolean)}  loadingChanged called each time an entry started or stopped to load
  *                                        following an user action (does not include preloading)
  * @property {?function(Entry, ?Error)} loadFailed
- * @property {?playbackDebug} debug
+ * @property {?engineDebug} debug
  */
+
+var debugDefaults = {
+  mediaDuration: -1,
+  mediaQuality: 'default'
+};
 
 /**
  * Creates the "Playback" facade.
@@ -44,32 +50,30 @@ var sequencer = require('./sequencer'),
  * Transition is triggered at "transitionDuration" before the end of the media and the "comingNext: is notified
  * 2 times "transitionDuration" before the end.
  *
- * @param {playbackConfig} config
- * @returns {Playback}
+ * @param {engineConfig} config
+ * @returns {Engine}
  */
-function playback(config) {
+function engine(config) {
 
-  /** @type {playbackConfig} */
+  /** @type {engineConfig} */
   var _config = defaults({}, config, {
       comingNext: noop,
       stateChanged: noop,
       playingChanged: noop,
       loadingChanged: noop,
       loadFailed: noop,
-      debug: {
-        mediaDuration: -1,
-        mediaQuality: 'default'
-      }
+      debug: debugDefaults
     }),
 
-    _playersPool = playersPool({
+    _playersPoolMain = playersPool({
       playerFactory: playerFactory({
         elementProducer: _config.elementProducer,
         debug: {
           duration: _config.debug.mediaDuration,
           quality: _config.debug.mediaQuality
         }
-      })
+      }),
+      max: Infinity
     });
 
   /**
@@ -95,7 +99,7 @@ function playback(config) {
           callback: slotProducerCfg.ending
         }
       },
-      playersPool: _playersPool
+      playersPool: _playersPoolMain
     });
   }
 
@@ -110,10 +114,10 @@ function playback(config) {
   });
 
   /**
-   * @typedef Playback
-   * @name Playback
+   * @typedef Engine
+   * @name Engine
    */
-  var Playback = {
+  var Engine = {
     play: _sequencer.play,
     pause: _sequencer.pause,
     skip: _sequencer.skip,
@@ -121,9 +125,9 @@ function playback(config) {
     checkNextEntry: _sequencer.checkNextEntry
   };
 
-  return Object.freeze(Playback);
+  return Object.freeze(Engine);
 }
 
-playback.States = sequencer.States;
+engine.States = sequencer.States;
 
-module.exports = playback;
+module.exports = engine;

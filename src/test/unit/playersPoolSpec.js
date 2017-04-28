@@ -2,7 +2,8 @@
 
 'use strict';
 
-var playersPool = require('../../main/playersPool'),
+var defer = require('lodash/defer'),
+  playersPool = require('../../main/playersPool'),
   playerFactoryMock = require('./playerFactoryMock'),
 
   describe = jasmine.getEnv().describe,
@@ -24,23 +25,63 @@ describe('A player pool', function() {
     _playerFactoryMock.newPlayer.and.callFake(function(provider) {
       return {provider: provider};
     });
-    _pool = playersPool({playerFactory: _playerFactoryMock});
+    _pool = playersPool({playerFactory: _playerFactoryMock, max: Infinity});
   });
 
   afterEach(function() {
     _playerFactoryMock = _pool = null;
   });
 
-  it('delivers a player', function() {
-    expect(_pool.getPlayer('mock')).toBeDefined();
+  it('delivers a player', function(done) {
+    _pool.getPlayer('mock')
+      .then(function(player) {
+        expect(player).toBeDefined();
+        done();
+      });
   });
 
-  it('recycles a player when freed', function() {
-    var playerFirst = _pool.getPlayer('mock');
+  it('recycles a player when freed', function(done) {
+    _pool.getPlayer('mock')
+      .then(function(playerFirst) {
+        expect(playerFirst).toBeDefined();
+        _pool.releasePlayer(playerFirst);
+        _pool.getPlayer('mock')
+          .then(function(player) {
+            expect(playerFirst).toEqual(player);
+            done();
+          });
+      });
+  });
 
-    expect(playerFirst).toBeDefined();
-    _pool.releasePlayer(playerFirst);
-    expect(playerFirst).toEqual(_pool.getPlayer('mock'));
+  it('make caller waits until there is free player', function(done) {
+    var callsOrder = [],
+      poolSmall = playersPool({playerFactory: _playerFactoryMock, max: 1});
+
+    poolSmall.getPlayer('mock')
+      .then(function getPlayer1(playerFirst) {
+        callsOrder.push(getPlayer1);
+
+        expect(playerFirst).toBeDefined();
+
+        poolSmall.getPlayer('mock')
+          .then(function getPlayer2(player) {
+            callsOrder.push(getPlayer2);
+
+            expect(callsOrder).toEqual([getPlayer1, release, getPlayer2]);
+            expect(playerFirst).toEqual(player);
+
+            done();
+          });
+
+        // make ure the only call release when the current stack is cleared
+        // it ensures that the second call to get player won't be executed straight and allow to check ordering
+        defer(release);
+
+        function release() {
+          callsOrder.push(release);
+          poolSmall.releasePlayer(playerFirst);
+        }
+      });
   });
 
   describe('triggers an error', function() {
@@ -56,11 +97,16 @@ describe('A player pool', function() {
       }).toThrow();
     });
 
-    it('when a foreign player instance freed', function() {
-      var poolForeign = playersPool({playerFactory: _playerFactoryMock});
-      expect(function() {
-        _pool.releasePlayer(poolForeign.getPlayer('mock'));
-      }).toThrow();
+    it('when a foreign player instance freed', function(done) {
+      var poolForeign = playersPool({playerFactory: _playerFactoryMock, max: Infinity});
+
+      poolForeign.getPlayer('mock').then(function(foreignPlayer) {
+        expect(function() {
+          _pool.releasePlayer(foreignPlayer);
+        }).toThrow();
+
+        done();
+      });
     });
   });
 });

@@ -1,9 +1,10 @@
 {
   "name": "mixtube-playback",
   "version": "1.0.1",
-  "main": "./src/main/playback",
+  "main": "./src/main/index",
   "dependencies": {
     "lodash": "^4.17.4",
+    "p-finally": "^1.0.0",
     "shifty": "^1.5.1"
   },
   "devDependencies": {
@@ -21,6 +22,7 @@
     "karma-chrome-launcher": "^2.0.0",
     "karma-firefox-launcher": "^1.0.1",
     "karma-jasmine": "^1.1.0",
+    "karma-spec-reporter": "0.0.31",
     "vinyl-source-stream": "^1.1.0",
     "watchify": "^3.4.0"
   },
