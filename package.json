@@ -5,7 +5,7 @@
   "dependencies": {
     "lodash": "^4.17.4",
     "p-finally": "^1.0.0",
-    "shifty": "^1.5.1"
+    "shifty": "^2.0.3"
   },
   "devDependencies": {
     "browser-sync": "^2.9.6",
